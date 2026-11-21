@@ -97,10 +97,6 @@ function syncCommute() {
   for (const el of form.querySelectorAll('.commute-detail')) el.hidden = home;
 }
 
-function syncNotes() {
-  $('notes-count').textContent = `${$('notes').value.length} of 200 characters`;
-}
-
 function setLocStatus(text) {
   $('loc-status').textContent = text;
 }
@@ -129,7 +125,6 @@ $('city').addEventListener('input', () => {
   setLocStatus('');
 });
 $('mode').addEventListener('change', syncCommute);
-$('notes').addEventListener('input', syncNotes);
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -142,7 +137,7 @@ form.addEventListener('submit', async (event) => {
   }
   error.textContent = '';
   const profile = readForm();
-  store.set('airwise:form', { ...profile, city });
+  store.set('airwise:form', $('remember').checked ? { ...profile, city } : null);
 
   const submit = $('submit');
   submit.disabled = true;
@@ -154,7 +149,6 @@ form.addEventListener('submit', async (event) => {
     const { place, air } = await api(`/api/air?${query}`);
     Object.assign(state, { place, profile, plan: null });
     renderAir(place, air);
-    $('empty').hidden = true;
     show($('air'));
     announce(`US AQI in ${place.name} is ${air.aqi}, ${air.band.label}. Writing your plan.`);
 
@@ -365,26 +359,76 @@ $('ask-form').addEventListener('submit', async (event) => {
   }
 });
 
-// ---------- start ----------
-// The "Why it matters" numbers count up once when they scroll into view. The real values are already in the HTML,
-// so with reduced motion (or no IntersectionObserver) nothing moves and nothing is lost.
-if (!reducedMotion.matches && 'IntersectionObserver' in window) {
-  const io = new IntersectionObserver((entries) => {
-    for (const { isIntersecting, target } of entries) {
-      if (!isIntersecting) continue;
-      io.unobserve(target);
-      const end = Number(target.dataset.count);
-      const start = performance.now();
-      const tick = (now) => {
-        const p = Math.min((now - start) / 900, 1);
-        target.textContent = Math.round(end * (1 - (1 - p) ** 3));
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }
-  }, { threshold: 0.6 });
-  for (const el of document.querySelectorAll('[data-count]')) io.observe(el);
+// ---------- the page around the planner ----------
+for (const btn of document.querySelectorAll('[data-city]')) {
+  btn.addEventListener('click', () => {
+    $('city').value = btn.dataset.city;
+    $('city').dispatchEvent(new Event('input'));
+    $('city').focus();
+  });
 }
+for (const btn of document.querySelectorAll('.quick-check')) {
+  btn.addEventListener('click', () => {
+    $('planner').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    $('locate').click();
+  });
+}
+$('remember').addEventListener('change', (e) => { if (!e.target.checked) store.set('airwise:form', null); });
+
+function countUp(el) {
+  const end = Number(el.dataset.count);
+  if (reducedMotion.matches || el.dataset.done) return;
+  el.dataset.done = '1';
+  const start = performance.now();
+  const tick = (now) => {
+    const p = Math.min((now - start) / 900, 1);
+    el.textContent = Math.round(end * (1 - (1 - p) ** 3)).toLocaleString('en-IN');
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// "Why it matters" pins to the screen and shows one number per stretch of scrolling. Without JS the
+// numbers are simply listed, and every number is in the page for screen readers either way.
+const impact = $('impact');
+const stats = [...impact.querySelectorAll('.stats li')];
+impact.classList.add('is-scrolly');
+function syncImpact() {
+  const rect = impact.getBoundingClientRect();
+  const progress = Math.min(Math.max(-rect.top / (rect.height - innerHeight), 0), 0.999);
+  const active = Math.floor(progress * stats.length);
+  if (impact.dataset.active === String(active)) return;
+  impact.dataset.active = active;
+  stats.forEach((li, i) => li.classList.toggle('is-on', i === active));
+  countUp(stats[active].querySelector('[data-count]'));
+}
+addEventListener('scroll', syncImpact, { passive: true });
+addEventListener('resize', syncImpact);
+syncImpact();
+
+// Habits carousel: one card in colour at a time.
+const habits = [...document.querySelectorAll('.habit')];
+function showHabit(i) {
+  const index = (i + habits.length) % habits.length;
+  habits.forEach((h, n) => {
+    h.classList.toggle('is-active', n === index);
+    h.querySelector('.habit-pic').setAttribute('aria-pressed', String(n === index));
+  });
+  habits[index].scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+}
+habits.forEach((h, n) => h.querySelector('.habit-pic').addEventListener('click', () => showHabit(n)));
+for (const btn of document.querySelectorAll('[data-habit]')) {
+  btn.addEventListener('click', () => showHabit(habits.findIndex((h) => h.classList.contains('is-active')) + Number(btn.dataset.habit)));
+}
+habits.forEach((h) => h.querySelector('.habit-pic').setAttribute('aria-pressed', String(h.classList.contains('is-active'))));
+
+for (const btn of document.querySelectorAll('[data-myth]')) {
+  btn.addEventListener('click', () => {
+    const row = $('myth-row');
+    row.scrollBy({ left: Number(btn.dataset.myth) * row.clientWidth * 0.8, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  });
+}
+
+// ---------- start ----------
 restoreForm();
 syncCommute();
-syncNotes();
