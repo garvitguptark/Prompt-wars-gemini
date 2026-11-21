@@ -54,7 +54,7 @@ test('only known files are served; everything else is a JSON 404 or 405', async 
   const res = await get('/api/plan');
   assert.equal(res.status, 405);
   assert.equal(res.headers.get('allow'), 'POST');
-  assert.deepEqual(await (await get('/healthz')).json(), { status: 'ok' });
+  assert.deepEqual(await (await get('/health')).json(), { status: 'ok' });
 });
 
 test('air lookup by city or by coordinates', async (t) => {

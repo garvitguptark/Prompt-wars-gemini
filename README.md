@@ -58,7 +58,7 @@ flowchart LR
 - **Structured output.** `responseMimeType: application/json` with a `responseSchema` (`PLAN_SCHEMA` in `src/gemini.js`) gives the plan a fixed shape: summary, alerts, routine, indoor and swaps. Each item has `time`, `title`, `action`, `why`, `impact` and `impactType`.
 - **Tailoring rules.** Sensitive people come first, every item says who it's for, timing follows the windows, and medical advice is limited to "see a doctor".
 - **Prompt-injection defence.** Free text is length-capped, and control characters and `<` `>` are stripped, so the text can't close a tag. It reaches Gemini only inside `<household>` or `<question>` tags, which the system instruction says are information, never instructions. Model output is shown with `textContent` only.
-- **Fast and resilient.** `thinkingLevel: LOW` keeps replies quick for a waiting user. Models are tried in order (`gemini-3.8-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`) when one is busy (429/503), slow (504 or timeout) or unavailable (404), within a 45-second total budget.
+- **Fast and resilient.** `thinkingLevel: LOW` keeps replies quick for a waiting user. Models are tried fastest first (`gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`) when one is busy (429/503), slow (504 or timeout) or unavailable (404), within a 45-second total budget. A model that fails sits out for 10 minutes (6 hours if it is unavailable to the project), so only one request pays for it.
 
 ## Google services
 
@@ -104,7 +104,7 @@ flowchart LR
 ## Testing
 
 ```bash
-npm test                # 55 tests, Node's built-in runner, no network needed
+npm test                # 56 tests, Node's built-in runner, no network needed
 npm run test:coverage   # 99.9% of lines covered
 ```
 
@@ -146,7 +146,7 @@ Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 |---|---|
 | `GEMINI_API_KEY` | Gemini API key (from Secret Manager on Cloud Run) |
 | `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Use Vertex AI instead of a key |
-| `GEMINI_MODELS` | Models to try in order (default `gemini-3.8-flash,gemini-3.5-flash,gemini-3.5-flash-lite`) |
+| `GEMINI_MODELS` | Models to try in order (default `gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.8-flash`) |
 | `MAPS_API_KEY` | Google Maps Platform key with the Air Quality API (optional) |
 | `PORT` | Set by Cloud Run; 8080 locally |
 
