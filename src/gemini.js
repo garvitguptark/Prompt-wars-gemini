@@ -7,9 +7,10 @@ import { HOUSEHOLD, EXERCISE, COOKING, LANGUAGES } from './profile.js';
 import { log as defaultLog } from './log.js';
 
 // Tried in order, fastest first: a family is waiting on the answer. A model can be overloaded (429/503),
-// slow (504/timeout) or closed to a project (404); a failed model sits out for a while so only one request pays for it.
+// slow (504/timeout) or closed to a project (404). A model that just failed moves to the back of the line for a
+// while, so the next request starts with one that is answering; it is still tried, because overloads pass quickly.
 export const DEFAULT_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
-const COOLDOWN_MS = { missing: 6 * 3_600_000, busy: 10 * 60_000 };
+const COOLDOWN_MS = { missing: 6 * 3_600_000, busy: 2 * 60_000 };
 const RETRYABLE = new Set([404, 408, 429, 500, 502, 503, 504]);
 
 export const FACTS = `Facts you may quote:
@@ -98,13 +99,11 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 20_0
   async function generate(contents, config) {
     if (!client) throw Object.assign(new Error('Gemini is not configured'), { status: 503 });
     const deadline = now() + budgetMs;
+    const cooling = (m) => (coolingUntil.get(m) ?? 0) > now();
+    const order = [...models.filter((m) => !cooling(m)), ...models.filter(cooling)];
     let lastError;
-    for (let i = 0; i < models.length; ) {
-      const model = models[i];
-      if ((coolingUntil.get(model) ?? 0) > now() && i < models.length - 1) { // the last model is always tried
-        i++;
-        continue;
-      }
+    for (let i = 0; i < order.length; ) {
+      const model = order[i];
       const remaining = deadline - now();
       if (remaining < 2_000) break;
       const thinking = noThinkingLevel.has(model) ? {} : { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }; // low = fast enough for a waiting user
