@@ -4,3 +4,7 @@ node_modules/
 .git/
 .github/
 test/
+e2e/
+playwright.config.js
+test-results/
+playwright-report/
