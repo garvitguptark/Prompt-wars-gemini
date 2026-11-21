@@ -2,7 +2,7 @@
 
 **PromptWars Virtual, Challenge 06.** AirWise reads the air outside your door, now and for the next 24 hours, and Gemini turns it into a plan for your household: when to go out, how to keep the air at home clean, and what each change saves, in numbers.
 
-> **Live app:** add your Cloud Run URL here after running `./deploy.sh`.
+> **Live app:** https://airwise-111804601174.asia-south1.run.app
 
 ## The problem
 
