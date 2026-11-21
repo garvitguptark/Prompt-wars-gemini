@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AirWise: smog-season plans for your household</title>
 <meta name="description" content="Live air quality for your area, turned by Gemini into a plan for your household: low-emission routines, indoor air hacks and sustainable swaps, with the impact of each choice.">
-<meta name="theme-color" content="#F7F2E8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F8F1E4">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/styles.css">
 <script type="module" src="/app.js"></script>
 </head>
@@ -19,106 +18,155 @@
 
 <header class="site-head">
   <div class="wrap head-row">
-    <a class="mark" href="/"><img src="/icon.svg" alt="" width="30" height="30">AirWise</a>
+    <a class="mark" href="/"><img src="/icon.svg" alt="" width="26" height="26">AIRWISE</a>
     <nav class="nav" aria-label="Main">
-      <a href="#how">How it works</a>
+      <a href="#what">What we do</a>
       <a href="#impact">Why it matters</a>
-      <a href="#planner">Your plan</a>
+      <a href="#habits">Habits</a>
+      <a href="#myths">Myths</a>
     </nav>
-    <a class="btn pill" href="#planner">Get my plan</a>
+    <div class="head-actions">
+      <button type="button" class="circle-btn quick-check" aria-label="Check the air at my location">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      </button>
+      <a class="btn outline" href="#planner">Get my plan</a>
+    </div>
   </div>
 </header>
 
 <main id="main" tabindex="-1">
+  <!-- Hero: giant type with a picture pill set inside the words -->
   <section class="hero" aria-labelledby="hero-title">
-    <div class="wrap">
-      <p class="chip-label">Urban air quality assistant</p>
-      <h1 id="hero-title">Breathe Less Smog, <span class="nowrap">Every Single Day</span></h1>
-      <p class="lead">AirWise reads the air outside your door, now and for the next 24 hours, and Gemini turns it into a plan for your household: when to go out, how to keep the air at home clean, and what each change saves.</p>
-      <div class="hero-cta">
-        <a class="btn primary" href="#planner">Get today's plan</a>
-        <a class="link-arrow" href="#how">How it works <span class="circle" aria-hidden="true">↗</span></a>
+    <div class="wrap hero-inner">
+      <h1 id="hero-title">
+        <span class="line">Breathe <span class="pill-img" aria-hidden="true"><img src="/haze.svg" alt=""></span> Easy</span>
+        <span class="line">Every Day</span>
+      </h1>
+      <p class="sr">AirWise reads the air outside your door and Gemini turns it into a plan for your household.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#planner">Get my plan</a>
+        <a class="link-arrow" href="#what">How it works <span class="circle" aria-hidden="true">↗</span></a>
       </div>
     </div>
-  </section>
-
-  <section class="how" id="how" aria-labelledby="how-title">
-    <div class="wrap">
-      <h2 id="how-title" class="sr">What your plan covers</h2>
-      <ul class="how-cards" role="list">
-        <li class="how-card">
-          <span class="icon" aria-hidden="true">◷</span>
-          <h3>Low-emission routine</h3>
-          <p>Your day timed around the cleanest and worst hours of the forecast, for the people in your home.</p>
-          <p class="how-foot"><span class="tags"># Timing</span><span class="tags"># Exercise</span></p>
-        </li>
-        <li class="how-card">
-          <span class="icon" aria-hidden="true">⌂</span>
-          <h3>Indoor air hacks</h3>
-          <p>What to run, close, stop burning or clean, fitted to your cooking fuel and whether you have a purifier.</p>
-          <p class="how-foot"><span class="tags"># Purifier</span><span class="tags"># Kitchen</span></p>
-        </li>
-        <li class="how-card">
-          <span class="icon" aria-hidden="true">⇄</span>
-          <h3>Sustainable swaps</h3>
-          <p>Changes that cut the pollution your household adds, with the CO₂ and the smog exposure each one saves.</p>
-          <p class="how-foot"><span class="tags"># Commute</span><span class="tags"># CO₂e</span></p>
-        </li>
+    <div class="wrap hero-strip">
+      <button type="button" class="strip-action quick-check"><span class="circle" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      </span>Quick check</button>
+      <ul class="wordmarks" role="list" aria-label="Built with">
+        <li>Gemini</li>
+        <li>Google Air Quality API</li>
+        <li>Cloud Run</li>
       </ul>
+      <a class="strip-action" href="#what">Scroll down <span class="circle" aria-hidden="true">↓</span></a>
     </div>
   </section>
 
+  <!-- What we do -->
+  <section class="what" id="what" aria-labelledby="what-title">
+    <div class="wrap center">
+      <p class="chip-label">What we do</p>
+      <h2 id="what-title" class="title">Turning Smog Readings Into<br>A Plan For Your Home</h2>
+      <a class="link-arrow" href="#impact">Learn more <span class="circle" aria-hidden="true">↗</span></a>
+    </div>
+    <ul class="wrap cards3" role="list">
+      <li class="card3">
+        <span class="icon" aria-hidden="true">◎</span>
+        <h3>Check your air</h3>
+        <p>Live readings and a 24-hour forecast for your area, with today's cleanest and worst hours marked.</p>
+        <div class="card3-foot">
+          <span class="mini-logos" aria-hidden="true"><span>G</span><span>✦</span><span>☁</span></span><span class="small">Live data</span>
+          <a class="circle" href="#planner" aria-label="Check your air">↗</a>
+        </div>
+      </li>
+      <li class="card3">
+        <span class="icon" aria-hidden="true">✦</span>
+        <h3>Get your plan</h3>
+        <p>Gemini writes a low-emission routine, indoor air hacks and sustainable swaps for the people in your home.</p>
+        <div class="card3-foot">
+          <span class="small"># Routine &nbsp; # Indoor &nbsp; # Swaps</span>
+          <a class="circle" href="#planner" aria-label="Get your plan">↗</a>
+        </div>
+      </li>
+      <li class="card3">
+        <span class="icon" aria-hidden="true">♥</span>
+        <h3>Act together</h3>
+        <p>Tick what you'll do today, see the CO₂ and exposure each change saves, and share the plan with family.</p>
+        <div class="card3-foot">
+          <span class="faces" aria-hidden="true"><span></span><span></span><span></span></span><span class="small">Share in one tap</span>
+          <a class="circle" href="#planner" aria-label="Start your plan">↗</a>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Why it matters: one big number at a time, changing as you scroll -->
   <section class="impact" id="impact" aria-labelledby="impact-title">
-    <div class="wrap">
+    <div class="impact-stage">
       <p class="chip-label">Why it matters</p>
-      <h2 id="impact-title">Numbers Behind The Smog</h2>
-      <dl class="stats">
-        <div><dt>WHO daily limit for PM2.5</dt><dd><span data-count="15">15</span> <small>µg/m³</small></dd></div>
-        <div><dt>Hours of forecast in every plan</dt><dd><span data-count="24">24</span></dd></div>
-        <div><dt>Languages your plan can be written in</dt><dd><span data-count="8">8</span></dd></div>
-      </dl>
-      <p class="impact-note">On a bad winter day in North India, PM2.5 can run past 15 times that limit. A well-fitted N95 cuts what you inhale by roughly 60–90%.</p>
+      <h2 id="impact-title" class="title">Small Changes,<br>Measurable Difference</h2>
+      <ol class="stats" role="list">
+        <li><p class="num"><span data-count="15">15</span><small> µg/m³</small></p><p class="stat-label">WHO's daily limit for PM2.5</p></li>
+        <li><p class="num"><span data-count="90">90</span>%</p><p class="stat-label">Up to this much less PM2.5 inhaled through a well-fitted N95</p></li>
+        <li><p class="num"><span data-count="80">80</span>%</p><p class="stat-label">Up to this much less indoor PM2.5 with a room-sized HEPA purifier</p></li>
+        <li><p class="num"><span data-count="749">749</span><small> kg</small></p><p class="stat-label">CO₂e a year saved by taking the metro instead of a car for a 12 km commute</p></li>
+      </ol>
     </div>
   </section>
 
+  <!-- The planner: a compact card on cream, like a donation form -->
   <section class="planner" id="planner" aria-labelledby="planner-title">
-  <div class="wrap">
-    <p class="chip-label">Your plan</p>
-    <h2 id="planner-title" class="section-title">Tell Us About Your Day</h2>
-    <div class="layout">
-      <form id="plan-form" class="card form" novalidate>
-        <fieldset>
-          <legend><span class="step" aria-hidden="true">1</span>Where are you?</legend>
-          <label for="city">City or area</label>
-          <div class="where">
-            <input id="city" name="city" type="text" list="cities" autocomplete="address-level2" maxlength="80" placeholder="e.g. Delhi, Lahore, Kolkata" aria-describedby="loc-status">
-            <button type="button" id="locate" class="btn line">
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-              Use my location
-            </button>
-          </div>
-          <datalist id="cities">
-            <option value="Delhi"><option value="Noida"><option value="Gurugram"><option value="Ghaziabad"><option value="Faridabad">
-            <option value="Lucknow"><option value="Kanpur"><option value="Patna"><option value="Kolkata"><option value="Mumbai">
-            <option value="Ahmedabad"><option value="Jaipur"><option value="Chandigarh"><option value="Ludhiana"><option value="Amritsar">
-            <option value="Bengaluru"><option value="Chennai"><option value="Hyderabad, India"><option value="Pune"><option value="Lahore">
-            <option value="Karachi"><option value="Dhaka"><option value="Kathmandu">
-          </datalist>
-          <p id="loc-status" class="hint" aria-live="polite"></p>
-        </fieldset>
+    <svg class="cloud cloud-l" aria-hidden="true" viewBox="0 0 400 260"><path d="M70 250a70 70 0 0 1-8-139A90 90 0 0 1 230 80a75 75 0 0 1 120 70 55 55 0 0 1-10 100z"/></svg>
+    <svg class="cloud cloud-r" aria-hidden="true" viewBox="0 0 400 260"><path d="M70 250a70 70 0 0 1-8-139A90 90 0 0 1 230 80a75 75 0 0 1 120 70 55 55 0 0 1-10 100z"/></svg>
+    <div class="wrap">
+      <form id="plan-form" class="check-card" novalidate>
+        <h2 id="planner-title">Check your air</h2>
+        <div class="remember">
+          <span aria-hidden="true">Just today</span>
+          <label class="switch"><input type="checkbox" id="remember" role="switch" checked><span class="track" aria-hidden="true"></span><span class="sr">Remember my answers on this device</span></label>
+          <span aria-hidden="true">Remember me <span class="heart">♥</span></span>
+        </div>
 
-        <fieldset>
-          <legend><span class="step" aria-hidden="true">2</span>Who's at home?</legend>
+        <div class="city-field">
+          <label for="city" class="sr">City or area</label>
+          <input id="city" name="city" type="text" list="cities" autocomplete="address-level2" maxlength="80" placeholder="Your city or area" aria-describedby="loc-status">
+          <label for="language" class="sr">Plan language</label>
+          <select id="language" name="language">
+            <option value="en" selected>English</option>
+            <option value="hi" lang="hi">हिन्दी</option>
+            <option value="bn" lang="bn">বাংলা</option>
+            <option value="pa" lang="pa">ਪੰਜਾਬੀ</option>
+            <option value="ur" lang="ur">اردو</option>
+            <option value="mr" lang="mr">मराठी</option>
+            <option value="ta" lang="ta">தமிழ்</option>
+            <option value="te" lang="te">తెలుగు</option>
+          </select>
+        </div>
+        <datalist id="cities">
+          <option value="Delhi"><option value="Noida"><option value="Gurugram"><option value="Ghaziabad"><option value="Lucknow">
+          <option value="Kanpur"><option value="Patna"><option value="Kolkata"><option value="Mumbai"><option value="Jaipur">
+          <option value="Chandigarh"><option value="Ludhiana"><option value="Bengaluru"><option value="Chennai"><option value="Hyderabad, India">
+          <option value="Lahore"><option value="Karachi"><option value="Dhaka"><option value="Kathmandu">
+        </datalist>
+        <div class="presets" role="group" aria-label="Popular cities">
+          <button type="button" data-city="Delhi">Delhi</button>
+          <button type="button" data-city="Lahore">Lahore</button>
+          <button type="button" data-city="Kolkata">Kolkata</button>
+          <button type="button" data-city="Mumbai">Mumbai</button>
+        </div>
+        <p id="loc-status" class="hint" aria-live="polite"></p>
+
+        <fieldset class="who">
+          <legend>Who's at home?</legend>
           <div class="chips">
             <label class="chip"><input type="checkbox" name="household" value="children"><span>Children</span></label>
-            <label class="chip"><input type="checkbox" name="household" value="elderly"><span>Older adults (65+)</span></label>
-            <label class="chip"><input type="checkbox" name="household" value="respiratory"><span>Asthma, lung or heart condition</span></label>
+            <label class="chip"><input type="checkbox" name="household" value="elderly"><span>Older adults</span></label>
+            <label class="chip"><input type="checkbox" name="household" value="respiratory"><span>Asthma or heart condition</span></label>
             <label class="chip"><input type="checkbox" name="household" value="pregnant"><span>Pregnancy</span></label>
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend><span class="step" aria-hidden="true">3</span>Your day</legend>
+        <details class="more">
+          <summary>Your day: commute, exercise, cooking</summary>
           <div class="grid-2">
             <div class="field span-2">
               <label for="mode">Daily commute</label>
@@ -132,15 +180,22 @@
               </select>
             </div>
             <div class="field commute-detail">
-              <label for="km">Distance one way (km)</label>
+              <label for="km">Km one way</label>
               <input id="km" name="km" type="number" inputmode="decimal" min="0" max="150" step="0.5" value="10">
             </div>
             <div class="field commute-detail">
               <label for="days">Days a week</label>
               <input id="days" name="days" type="number" inputmode="numeric" min="1" max="7" step="1" value="5">
             </div>
+            <div class="field span-2">
+              <label for="cooking">Cooking fuel</label>
+              <select id="cooking" name="cooking">
+                <option value="gas" selected>Gas or LPG</option>
+                <option value="induction">Induction or electric</option>
+                <option value="biomass">Wood, coal or dung</option>
+              </select>
+            </div>
           </div>
-
           <fieldset class="segmented">
             <legend>Outdoor exercise</legend>
             <div class="seg-row">
@@ -149,51 +204,22 @@
               <label><input type="radio" name="exercise" value="evening"><span>Evenings</span></label>
             </div>
           </fieldset>
+        </details>
 
-          <div class="grid-2">
-            <div class="field">
-              <label for="cooking">Cooking fuel</label>
-              <select id="cooking" name="cooking">
-                <option value="gas" selected>Gas or LPG</option>
-                <option value="induction">Induction or electric</option>
-                <option value="biomass">Wood, coal or dung</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="language">Plan language</label>
-              <select id="language" name="language">
-                <option value="en" selected>English</option>
-                <option value="hi" lang="hi">हिन्दी</option>
-                <option value="bn" lang="bn">বাংলা</option>
-                <option value="pa" lang="pa">ਪੰਜਾਬੀ</option>
-                <option value="ur" lang="ur">اردو</option>
-                <option value="mr" lang="mr">मराठी</option>
-                <option value="ta" lang="ta">தமிழ்</option>
-                <option value="te" lang="te">తెలుగు</option>
-              </select>
-            </div>
-          </div>
+        <label for="notes" class="sr">Anything else about your household (optional)</label>
+        <input id="notes" name="notes" type="text" maxlength="200" placeholder="Anything else? e.g. we live by a highway">
+        <label class="check"><input type="checkbox" id="purifier" name="purifier"><span>We have an air purifier</span></label>
 
-          <label class="check"><input type="checkbox" id="purifier" name="purifier"><span>We have an air purifier</span></label>
-
-          <div class="field">
-            <label for="notes">Anything else? <span class="optional">(optional)</span></label>
-            <textarea id="notes" name="notes" maxlength="200" rows="2" placeholder="e.g. we live by a highway, our baby is 6 months old" aria-describedby="notes-count"></textarea>
-            <p id="notes-count" class="hint">0 of 200 characters</p>
-          </div>
-        </fieldset>
-
-        <button class="btn primary big" type="submit" id="submit">Get today's plan</button>
+        <div class="card-actions">
+          <button class="btn primary" type="submit" id="submit">Get my plan</button>
+          <button class="btn soft" type="button" id="locate">Use my location</button>
+        </div>
         <p id="form-error" class="error" role="alert"></p>
-        <p class="hint privacy">Your answers stay on this device. Your location is only used to look up the air and is never stored.</p>
+        <p class="hint privacy">Your location is only used to look up the air and is never stored.</p>
       </form>
+      <p class="below-card"><a class="link-arrow" href="#what">What will I get? <span class="circle" aria-hidden="true">↗</span></a></p>
 
       <div class="results" id="results">
-        <section class="card empty" id="empty" aria-labelledby="empty-title">
-          <h2 id="empty-title">Your plan appears here</h2>
-          <p>Enter your city and a few details, then tap <strong>Get today's plan</strong>. You'll see the live air, a 24-hour forecast and a plan written for your household.</p>
-        </section>
-
         <section class="card air reveal" id="air" aria-labelledby="air-title" hidden>
           <div class="air-top">
             <div>
@@ -236,16 +262,100 @@
         </section>
       </div>
     </div>
-  </div>
   </section>
 
-  <section class="cta" aria-labelledby="cta-title">
+  <!-- Habits carousel: the active card in colour, the rest in grey -->
+  <section class="habits" id="habits" aria-labelledby="habits-title">
+    <div class="wrap center">
+      <h2 id="habits-title" class="title">Small Habits That<br>Clear The Air</h2>
+      <a class="link-arrow" href="#planner">See your plan <span class="circle" aria-hidden="true">↗</span></a>
+    </div>
+    <ul class="habit-row" role="list">
+      <li class="habit tone-blue">
+        <button type="button" class="habit-pic" aria-label="N95 respirator"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M12 27c6-9 34-9 40 0v7c0 11-9 18-20 18s-20-7-20-18z"/><path d="M12 30 4 25M52 30l8-5M20 34h24M22 42h20"/></svg></button>
+        <div class="habit-info"><h3>N95 respirator</h3><p>Well fitted, it filters at least 95% of fine particles.</p>
+          <div class="meter" aria-hidden="true"><span class="m90"></span></div><p class="meter-row"><span>Less PM2.5 inhaled</span><b>up to 90%</b></p></div>
+      </li>
+      <li class="habit tone-teal">
+        <button type="button" class="habit-pic" aria-label="HEPA purifier"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="18" y="10" width="28" height="46" rx="6"/><path d="M24 20h16M24 26h16M24 32h16M24 38h16M8 18c3 2 3 6 0 8M56 18c-3 2-3 6 0 8"/></svg></button>
+        <div class="habit-info"><h3>HEPA purifier</h3><p>Sized for the room, on high, with the windows shut.</p>
+          <div class="meter" aria-hidden="true"><span class="m80"></span></div><p class="meter-row"><span>Less indoor PM2.5</span><b>up to 80%</b></p></div>
+      </li>
+      <li class="habit is-active tone-amber">
+        <button type="button" class="habit-pic" aria-label="Metro instead of a car"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="8" width="36" height="40" rx="9"/><path d="M14 28h36M22 18h20M22 38h.01M42 38h.01M20 56l6-8M44 56l-6-8"/></svg></button>
+        <div class="habit-info"><h3>Metro instead of a car</h3><p>For a 12 km commute, five days a week.</p>
+          <div class="meter" aria-hidden="true"><span class="m80"></span></div><p class="meter-row"><span>Less commute CO₂e</span><b>80%</b></p></div>
+      </li>
+      <li class="habit tone-rose">
+        <button type="button" class="habit-pic" aria-label="Induction cooking"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="20" width="48" height="30" rx="5"/><circle cx="23" cy="35" r="7"/><circle cx="41" cy="35" r="7"/><circle cx="23" cy="35" r="2.5"/><circle cx="41" cy="35" r="2.5"/></svg></button>
+        <div class="habit-info"><h3>Induction cooking</h3><p>No flame, so no burner NO₂ in your kitchen.</p>
+          <div class="meter" aria-hidden="true"><span class="m100"></span></div><p class="meter-row"><span>Burner NO₂ avoided</span><b>100%</b></p></div>
+      </li>
+      <li class="habit tone-violet">
+        <button type="button" class="habit-pic" aria-label="Work from home on smog peaks"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><rect x="26" y="36" width="12" height="18"/></svg></button>
+        <div class="habit-info"><h3>Home on the worst day</h3><p>One more work-from-home day a week, on the smoggiest one.</p>
+          <div class="meter" aria-hidden="true"><span class="m20"></span></div><p class="meter-row"><span>Less weekly commute CO₂e</span><b>20%</b></p></div>
+      </li>
+    </ul>
+    <div class="wrap row-nav">
+      <button type="button" class="circle-btn" data-habit="-1" aria-label="Previous habit">←</button>
+      <button type="button" class="circle-btn green" data-habit="1" aria-label="Next habit">→</button>
+    </div>
+  </section>
+
+  <!-- Full-bleed picture band -->
+  <section class="band" aria-labelledby="band-title">
     <div class="wrap">
+      <p class="chip-label light">Every smog day</p>
+      <h2 id="band-title">When The Air Turns,<br>You'll Know What To Do</h2>
+      <p class="band-text">Live readings, the next 24 hours, and a plan for the people you live with.</p>
+    </div>
+  </section>
+
+  <!-- Myths row: picture cards of different heights -->
+  <section class="myths" id="myths" aria-labelledby="myths-title">
+    <div class="wrap center">
+      <h2 id="myths-title" class="title">Smog Myths, Checked</h2>
+      <a class="link-arrow" href="#planner">Ask AirWise <span class="circle" aria-hidden="true">↗</span></a>
+    </div>
+    <ul class="wrap myth-row" role="list" id="myth-row" tabindex="0" aria-label="Smog myths, scrolls sideways">
+      <li class="myth tall tone-green">
+        <div class="myth-pic" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 54V30M32 34c-10 0-16-8-16-18 10 0 16 8 16 18zM32 30c8 0 14-6 14-14-8 0-14 6-14 14z"/><path d="M22 54h20"/></svg></div>
+        <p class="myth-tag">Myth</p><h3>Indoor plants clean smoggy air</h3><p>Not measurably. A HEPA purifier or a box-fan filter does.</p>
+      </li>
+      <li class="myth tone-sky">
+        <div class="myth-pic" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M12 24h40v14c0 8-9 14-20 14s-20-6-20-14z"/><path d="M12 28 4 24M52 28l8-4M20 32h24M20 38h24"/></svg></div>
+        <p class="myth-tag">Myth</p><h3>A surgical mask is enough</h3><p>It does little against PM2.5. A well-fitted N95 filters at least 95%.</p>
+      </li>
+      <li class="myth mid tone-amber">
+        <div class="myth-pic" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="12" y="10" width="40" height="44" rx="3"/><path d="M32 10v44M12 32h40"/></svg></div>
+        <p class="myth-tag">Myth</p><h3>Fresh air always helps</h3><p>Only in the day's cleanest hours. Otherwise keep the windows shut.</p>
+      </li>
+      <li class="myth tone-rose">
+        <div class="myth-pic" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M30 54V24M34 54V24M26 24h12"/><path d="M32 20c-4-4 4-6 0-10M38 18c-3-3 3-5 0-8"/></svg></div>
+        <p class="myth-tag">Myth</p><h3>Smog only comes from outside</h3><p>Incense, mosquito coils and frying are big indoor sources.</p>
+      </li>
+      <li class="myth tall tone-violet">
+        <div class="myth-pic" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="18" y="10" width="28" height="46" rx="6"/><path d="M24 20h16M24 26h16M24 32h16M8 16l10 6M56 16l-10 6"/></svg></div>
+        <p class="myth-tag">Myth</p><h3>Purifiers work with windows open</h3><p>They can't keep up. Shut the room and run it on high.</p>
+      </li>
+    </ul>
+    <div class="wrap row-nav">
+      <button type="button" class="circle-btn" data-myth="-1" aria-label="Scroll myths back">←</button>
+      <button type="button" class="circle-btn green" data-myth="1" aria-label="Scroll myths forward">→</button>
+    </div>
+  </section>
+
+  <!-- Call to action with floating circles -->
+  <section class="cta" aria-labelledby="cta-title">
+    <span class="float f1" aria-hidden="true"></span><span class="float f2" aria-hidden="true"></span>
+    <span class="float f3" aria-hidden="true"></span><span class="float f4" aria-hidden="true"></span>
+    <div class="wrap center">
       <p class="chip-label">Take action</p>
-      <h2 id="cta-title">Clean Air Starts At Home</h2>
-      <div class="hero-cta">
-        <a class="btn primary" href="#planner">Get today's plan</a>
-        <a class="link-arrow" href="#impact">Why it matters <span class="circle" aria-hidden="true">↗</span></a>
+      <h2 id="cta-title" class="title">Start Your<br>Clean-Air Day</h2>
+      <div class="cta-row">
+        <a class="btn primary" href="#planner">Get my plan</a>
+        <a class="link-arrow" href="#what">Learn more <span class="circle" aria-hidden="true">↗</span></a>
       </div>
     </div>
   </section>
@@ -253,25 +363,33 @@
 
 <footer class="site-foot">
   <div class="wrap foot-grid">
-    <div>
-      <a class="mark" href="/"><img src="/icon.svg" alt="" width="30" height="30">AirWise</a>
-      <p class="foot-note">Air data from the Google Air Quality API, or Open-Meteo when it is unavailable. AQI is the US EPA index, computed from PM2.5. Plans are written by Google Gemini.</p>
+    <div class="foot-brand">
+      <a class="mark big" href="/"><img src="/icon.svg" alt="" width="44" height="44">AIRWISE</a>
+      <a class="circle" href="https://github.com/garvitguptark/Promt-wars-gemini" aria-label="Source code on GitHub">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+      </a>
     </div>
     <nav aria-label="Footer">
       <p class="foot-head">Quick links</p>
       <ul role="list">
-        <li><a href="#how">How it works</a></li>
+        <li><a href="#planner">Get my plan</a></li>
+        <li><a href="#what">What we do</a></li>
         <li><a href="#impact">Why it matters</a></li>
-        <li><a href="#planner">Your plan</a></li>
+        <li><a href="#habits">Habits</a></li>
+        <li><a href="#myths">Myths</a></li>
       </ul>
     </nav>
     <div>
-      <p class="foot-head">Please note</p>
-      <p class="foot-note">AirWise gives general guidance, not medical advice. If anyone has trouble breathing, chest pain or dizziness, contact a doctor.</p>
+      <p class="foot-head">Data sources</p>
+      <ul role="list" class="sources">
+        <li><span class="circle" aria-hidden="true">◎</span>Google Air Quality API</li>
+        <li><span class="circle" aria-hidden="true">☁</span>Open-Meteo, as a backup</li>
+        <li><span class="circle" aria-hidden="true">✦</span>Plans by Google Gemini</li>
+      </ul>
     </div>
   </div>
   <div class="wrap foot-bottom">
-    <p>Built for PromptWars Virtual, Challenge 06.</p>
+    <p>© 2026 AirWise · Built for PromptWars Virtual, Challenge 06 · General guidance, not medical advice</p>
     <a class="link-arrow" href="#main">Back to top <span class="circle" aria-hidden="true">↑</span></a>
   </div>
 </footer>
