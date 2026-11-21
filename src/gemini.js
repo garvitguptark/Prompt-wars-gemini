@@ -92,11 +92,11 @@ export function clientFromEnv(env = process.env) {
  * @param {{ models: { generateContent: Function } } | null} deps.client  a GoogleGenAI instance, or null to disable
  * @param {string[]} [deps.models]  model IDs to try in order
  */
-export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 20_000, budgetMs = 45_000, log = defaultLog, now = Date.now } = {}) {
+export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 30_000, budgetMs = 50_000, log = defaultLog, now = Date.now } = {}) {
   const noThinkingLevel = new Set(); // models that rejected thinkingLevel; they get the request without it
   const coolingUntil = new Map(); // model -> when it may be tried again after failing
 
-  async function generate(contents, config) {
+  async function generate(contents, config, level = ThinkingLevel.LOW) {
     if (!client) throw Object.assign(new Error('Gemini is not configured'), { status: 503 });
     const deadline = now() + budgetMs;
     const cooling = (m) => (coolingUntil.get(m) ?? 0) > now();
@@ -106,7 +106,7 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 20_0
       const model = order[i];
       const remaining = deadline - now();
       if (remaining < 2_000) break;
-      const thinking = noThinkingLevel.has(model) ? {} : { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }; // low = fast enough for a waiting user
+      const thinking = noThinkingLevel.has(model) ? {} : { thinkingConfig: { thinkingLevel: level } }; // kept low: a family is waiting
       try {
         const res = await client.models.generateContent({
           model, contents, config: { ...config, ...thinking, httpOptions: { timeout: Math.min(timeoutMs, remaining) } },
@@ -134,7 +134,7 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 20_0
     async plan(ctx) {
       const { text: json, model } = await generate(planPrompt(ctx), {
         systemInstruction: PLAN_SYSTEM, responseMimeType: 'application/json', responseSchema: PLAN_SCHEMA, temperature: 0.5,
-      });
+      }, ThinkingLevel.MINIMAL); // the facts are computed in code, so a long JSON reply needs little reasoning
       return { plan: sanitizePlan(JSON.parse(json)), model };
     },
     /** A short plain-text answer to a follow-up question: { answer, model }. */
