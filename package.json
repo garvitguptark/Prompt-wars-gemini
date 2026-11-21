@@ -1,0 +1,21 @@
+{
+  "name": "airwise",
+  "version": "1.0.0",
+  "description": "Urban Air Quality Assistant: live air data and Gemini turn smog days into a household plan with measurable impact.",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage",
+    "check": "node --check server.js && for f in src/*.js public/*.js; do node --check \"$f\" || exit 1; done"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@google/genai": "3.6.1"
+  }
+}
