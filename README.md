@@ -94,7 +94,7 @@ flowchart LR
 
 ## Accessibility
 
-- An axe-core scan reports **no violations** on desktop, on a phone viewport, in dark mode and in built-in-guidance mode.
+- **Tested automatically, in a real browser.** `npm run test:e2e` runs axe-core against WCAG 2.2 AA on the landing page and on a full plan, on desktop and phone, and fails the build on any violation. Other browser tests check keyboard-only use (skip link, chips, submitting, focus moving to the results), screen-reader announcements, reduced motion and no sideways scrolling at 320 px.
 - **Structure:** semantic landmarks and headings, labels for every control, and grouped choices in `fieldset`s with `legend`s. There's a skip link and a visible focus ring everywhere.
 - **Colour is never the only signal.** The AQI band is written out, every forecast hour has screen-reader text ("2 pm: AQI 154, Unhealthy, cleanest window"), and every chart row shows its numbers as text.
 - **Live regions** announce progress. Focus moves to the results, and the plan is marked busy while it loads.
@@ -104,13 +104,15 @@ flowchart LR
 ## Testing
 
 ```bash
-npm test                # 57 tests, Node's built-in runner, no network needed
-npm run test:coverage   # 99.9% of lines covered
+npm test                # 57 unit and integration tests, Node's built-in runner, no network needed
+npm run test:coverage   # the same, failing below 95% of lines (currently 99.9%)
+npm run test:e2e        # 20 browser tests: Playwright in Chromium, desktop and phone, with axe accessibility audits
 ```
 
-- **Unit tests:** every EPA breakpoint edge, forecast windows in the place's time zone, commute maths, input validation, both API response parsers, cache expiry and in-flight sharing, prompt contents and tag isolation, model fallback and thinking-level retry, and output cleaning.
+- **Unit tests:** every EPA breakpoint edge, forecast windows in the place's time zone, commute maths, input validation, both API response parsers, cache expiry and in-flight sharing, prompt contents and tag isolation, model fallback order, and output cleaning.
 - **Integration tests:** the real HTTP server on a random port, covering security headers, compression and ETags, unknown and traversal paths, validation errors, rate limits, upstream failures and the built-in-guidance path.
-- **CI:** GitHub Actions runs the syntax check and the full suite with coverage on every push.
+- **Browser tests** (`e2e/`): the real page against the real server, with the API stubbed from the same fixtures. They cover the full plan flow, WCAG 2.2 AA audits, keyboard-only use, model output that tries to inject HTML (shown as text, never run), the error and retry path, follow-up questions, "remember me" clearing stored answers, 320 px layout and reduced motion.
+- **CI:** GitHub Actions runs the syntax check, `npm audit`, the coverage-gated suite and the browser suite on every push. Dependabot proposes dependency and Actions updates weekly.
 
 ## Run it locally
 
@@ -165,6 +167,7 @@ Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 | `src/cache.js`, `src/log.js` | TTL cache with in-flight sharing; structured logs |
 | `public/` | The page: HTML, CSS and JavaScript, no framework, no build step |
 | `test/` | Unit and integration tests with recorded-shape sample data |
+| `e2e/` | Browser and accessibility tests (Playwright + axe) |
 
 ## Honest limits
 

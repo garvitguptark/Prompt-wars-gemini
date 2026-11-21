@@ -9,13 +9,18 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage",
-    "check": "node --check server.js && for f in src/*.js public/*.js; do node --check \"$f\" || exit 1; done"
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=85 --test-coverage-functions=95",
+    "check": "node --check server.js && for f in src/*.js public/*.js; do node --check \"$f\" || exit 1; done",
+    "test:e2e": "playwright test --trace off"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "@google/genai": "3.6.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.63.0"
   }
 }
