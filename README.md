@@ -58,7 +58,7 @@ flowchart LR
 - **Structured output.** `responseMimeType: application/json` with a `responseSchema` (`PLAN_SCHEMA` in `src/gemini.js`) gives the plan a fixed shape: summary, alerts, routine, indoor and swaps. Each item has `time`, `title`, `action`, `why`, `impact` and `impactType`.
 - **Tailoring rules.** Sensitive people come first, every item says who it's for, timing follows the windows, and medical advice is limited to "see a doctor".
 - **Prompt-injection defence.** Free text is length-capped, and control characters and `<` `>` are stripped, so the text can't close a tag. It reaches Gemini only inside `<household>` or `<question>` tags, which the system instruction says are information, never instructions. Model output is shown with `textContent` only.
-- **Fast and resilient.** `thinkingLevel: LOW` keeps replies quick for a waiting user. Models are tried fastest first (`gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`) when one is busy (429/503), slow (504 or timeout) or unavailable (404), within a 45-second total budget. A model that fails sits out for 10 minutes (6 hours if it is unavailable to the project), so only one request pays for it.
+- **Fast and resilient.** `thinkingLevel: LOW` keeps replies quick for a waiting user. Models are tried fastest first (`gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`) when one is busy (429/503), slow (504 or timeout) or unavailable (404), within a 45-second total budget. A model that just failed moves to the back of the line for 2 minutes (6 hours if it is unavailable to the project), so the next request starts with one that is answering.
 
 ## Google services
 
@@ -104,7 +104,7 @@ flowchart LR
 ## Testing
 
 ```bash
-npm test                # 56 tests, Node's built-in runner, no network needed
+npm test                # 57 tests, Node's built-in runner, no network needed
 npm run test:coverage   # 99.9% of lines covered
 ```
 
