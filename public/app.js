@@ -366,6 +366,25 @@ $('ask-form').addEventListener('submit', async (event) => {
 });
 
 // ---------- start ----------
+// The "Why it matters" numbers count up once when they scroll into view. The real values are already in the HTML,
+// so with reduced motion (or no IntersectionObserver) nothing moves and nothing is lost.
+if (!reducedMotion.matches && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver((entries) => {
+    for (const { isIntersecting, target } of entries) {
+      if (!isIntersecting) continue;
+      io.unobserve(target);
+      const end = Number(target.dataset.count);
+      const start = performance.now();
+      const tick = (now) => {
+        const p = Math.min((now - start) / 900, 1);
+        target.textContent = Math.round(end * (1 - (1 - p) ** 3));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+  }, { threshold: 0.6 });
+  for (const el of document.querySelectorAll('[data-count]')) io.observe(el);
+}
 restoreForm();
 syncCommute();
 syncNotes();

@@ -33,7 +33,7 @@ In winter smog, families check an AQI number many times a day, but a number does
 | Tailored to location | Live readings and forecast at the user's coordinates, in the place's own time zone |
 | Tailored to lifestyle | Household members, commute (mode, distance, days), exercise, purifier, cooking, notes, language |
 | Clearly explains the direct impact | Every item has *Why* and *Impact* with its type; CO₂e figures are computed in code, never guessed by the model |
-| Responsive, frictionless UI | One form, sensible defaults, remembered answers, geolocation, 12.8 KB of compressed page code, works from 320 px wide |
+| Responsive, frictionless UI | One form, sensible defaults, remembered answers, geolocation, 14.2 KB of compressed page code, works from 320 px wide |
 
 ## How it works
 
@@ -90,7 +90,7 @@ flowchart LR
 - **Caches:** air readings for 10 minutes per ~1 km cell, place names for 24 hours, plans for 30 minutes per household and reading. Identical requests made at the same moment share one upstream call.
 - **Speed:** current conditions and forecast are fetched in parallel. Every upstream call has a timeout, and the low thinking level keeps Gemini quick.
 - **Static files** are read once at start-up, precompressed with brotli and gzip, and served with ETags (304 on revalidation).
-- **Small footprint:** one runtime dependency (`@google/genai`), no frontend framework and no build step. The whole page is 12.8 KB compressed, fonts aside.
+- **Small footprint:** one runtime dependency (`@google/genai`), no frontend framework and no build step. The whole page is 14.2 KB compressed, fonts aside.
 
 ## Accessibility
 
