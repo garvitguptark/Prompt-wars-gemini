@@ -6,8 +6,10 @@ import { rangeLabel, hourLabel } from './aqi.js';
 import { HOUSEHOLD, EXERCISE, COOKING, LANGUAGES } from './profile.js';
 import { log as defaultLog } from './log.js';
 
-// Tried in order. A model can be overloaded (429/503), slow (504/timeout) or closed to a project (404).
-export const DEFAULT_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+// Tried in order, fastest first: a family is waiting on the answer. A model can be overloaded (429/503),
+// slow (504/timeout) or closed to a project (404); a failed model sits out for a while so only one request pays for it.
+export const DEFAULT_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+const COOLDOWN_MS = { missing: 6 * 3_600_000, busy: 10 * 60_000 };
 const RETRYABLE = new Set([404, 408, 429, 500, 502, 503, 504]);
 
 export const FACTS = `Facts you may quote:
@@ -89,16 +91,21 @@ export function clientFromEnv(env = process.env) {
  * @param {{ models: { generateContent: Function } } | null} deps.client  a GoogleGenAI instance, or null to disable
  * @param {string[]} [deps.models]  model IDs to try in order
  */
-export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 25_000, budgetMs = 45_000, log = defaultLog } = {}) {
+export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 20_000, budgetMs = 45_000, log = defaultLog, now = Date.now } = {}) {
   const noThinkingLevel = new Set(); // models that rejected thinkingLevel; they get the request without it
+  const coolingUntil = new Map(); // model -> when it may be tried again after failing
 
   async function generate(contents, config) {
     if (!client) throw Object.assign(new Error('Gemini is not configured'), { status: 503 });
-    const deadline = Date.now() + budgetMs;
+    const deadline = now() + budgetMs;
     let lastError;
     for (let i = 0; i < models.length; ) {
       const model = models[i];
-      const remaining = deadline - Date.now();
+      if ((coolingUntil.get(model) ?? 0) > now() && i < models.length - 1) { // the last model is always tried
+        i++;
+        continue;
+      }
+      const remaining = deadline - now();
       if (remaining < 2_000) break;
       const thinking = noThinkingLevel.has(model) ? {} : { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }; // low = fast enough for a waiting user
       try {
@@ -113,6 +120,7 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 25_0
         }
         if (err.status && !RETRYABLE.has(err.status)) throw err;
         log('WARNING', 'Gemini model unavailable, trying the next one', { model, status: err.status ?? err.name });
+        coolingUntil.set(model, now() + (err.status === 404 ? COOLDOWN_MS.missing : COOLDOWN_MS.busy));
         lastError = err;
         i++;
       }

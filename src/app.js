@@ -120,7 +120,7 @@ export function createApp({ air, planner, publicDir, log = defaultLog, limits = 
   const limit = { air: rateLimiter(...limits.air), ai: rateLimiter(...limits.ai) };
 
   const routes = {
-    'GET /healthz': { run: async () => ({ status: 'ok' }) },
+    'GET /health': { run: async () => ({ status: 'ok' }) },
     'GET /api/air': {
       group: 'air',
       async run(req, url) {

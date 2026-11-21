@@ -114,3 +114,16 @@ test('model output is trimmed, capped and checked before anyone sees it', () => 
 test('answers lose markdown but keep paragraphs', () => {
   assert.equal(cleanAnswer('**Stay in.**\n\n\n\n## Later\nGo out at `2 pm`.'), 'Stay in.\n\n Later\nGo out at 2 pm.');
 });
+
+test('a failed model sits out for a while, so later requests skip straight past it', async () => {
+  let t = 0;
+  const client = fakeClient(apiError(404), { text: 'A' }, { text: 'B' }, apiError(503), { text: 'C' });
+  const gemini = createGemini({ client, models: ['m1', 'm2'], log: quiet, now: () => t });
+  assert.equal((await gemini.ask(delhiContext(), 'One?')).answer, 'A');
+  assert.equal((await gemini.ask(delhiContext(), 'Two?')).answer, 'B');
+  assert.deepEqual(client.calls.map((c) => c.model), ['m1', 'm2', 'm2'], 'm1 was skipped the second time');
+  t = 7 * 3_600_000; // past the 6-hour sit-out for a missing model
+  client.calls.length = 0;
+  await gemini.ask(delhiContext(), 'Three?');
+  assert.deepEqual(client.calls.map((c) => c.model), ['m1', 'm2'], 'm1 is tried again, and the last model is always tried');
+});
