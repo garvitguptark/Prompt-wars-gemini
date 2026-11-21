@@ -56,7 +56,12 @@ export function forecastWindows(hours, timeZone, size = 3) {
     const slice = hours.slice(i, i + size);
     const avg = Math.round(slice.reduce((sum, h) => sum + h.aqi, 0) / size);
     const startHour = localHour(slice[0].time);
-    spans.push({ start: slice[0].time, end: addHours(slice[size - 1].time, 1), avgAqi: avg, waking: startHour >= 6 && startHour + size <= 22 });
+    spans.push({
+      start: slice[0].time,
+      end: addHours(slice[size - 1].time, 1),
+      avgAqi: avg,
+      waking: startHour >= 6 && startHour + size <= 22,
+    });
   }
   const waking = spans.filter((s) => s.waking);
   const pick = (list, better) => list.reduce((best, s) => (better(s.avgAqi, best.avgAqi) ? s : best));
@@ -74,4 +79,5 @@ export const hourLabel = (iso, timeZone) =>
   new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: true, timeZone }).format(new Date(iso)).toLowerCase();
 
 /** "2 pm–5 pm" for a forecast window at the place. */
-export const rangeLabel = (window, timeZone) => `${hourLabel(window.start, timeZone)}–${hourLabel(window.end, timeZone)}`;
+export const rangeLabel = (window, timeZone) =>
+  `${hourLabel(window.start, timeZone)}–${hourLabel(window.end, timeZone)}`;

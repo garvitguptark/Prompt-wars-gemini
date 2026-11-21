@@ -18,10 +18,17 @@ test('entries expire after their time and the oldest is dropped when full', () =
 test('remember shares one piece of in-flight work and forgets failures', async () => {
   const cache = ttlCache({ ttlMs: 1000 });
   let runs = 0;
-  const work = async () => { runs++; return 'ok'; };
+  const work = async () => {
+    runs++;
+    return 'ok';
+  };
   assert.deepEqual(await Promise.all([cache.remember('k', work), cache.remember('k', work)]), ['ok', 'ok']);
   assert.equal(runs, 1);
-  await assert.rejects(cache.remember('bad', async () => { throw new Error('nope'); }));
+  await assert.rejects(
+    cache.remember('bad', async () => {
+      throw new Error('nope');
+    }),
+  );
   assert.equal(await cache.remember('bad', async () => 'second try'), 'second try');
 });
 
@@ -30,6 +37,10 @@ test('logs are one JSON object per line, errors on stderr', (t) => {
   const err = t.mock.method(console, 'error', () => {});
   log('INFO', 'hello', { httpRequest: { status: 200 } });
   log('ERROR', 'boom');
-  assert.deepEqual(JSON.parse(out.mock.calls[0].arguments[0]), { severity: 'INFO', message: 'hello', httpRequest: { status: 200 } });
+  assert.deepEqual(JSON.parse(out.mock.calls[0].arguments[0]), {
+    severity: 'INFO',
+    message: 'hello',
+    httpRequest: { status: 200 },
+  });
   assert.deepEqual(JSON.parse(err.mock.calls[0].arguments[0]), { severity: 'ERROR', message: 'boom' });
 });

@@ -9,10 +9,17 @@ import { delhi, delhiAir, family, geminiPlan, quiet } from './fixtures.js';
 
 const publicDir = join(import.meta.dirname, '..', 'public');
 const fakeAir = {
-  geocode: async (q) => { if (q === 'Atlantis') throw new PlaceNotFound('We couldn\'t find "Atlantis".'); return delhi; },
+  geocode: async (q) => {
+    if (q === 'Atlantis') throw new PlaceNotFound('We couldn\'t find "Atlantis".');
+    return delhi;
+  },
   lookup: async () => delhiAir(),
 };
-const fakeGemini = { enabled: true, plan: async () => ({ plan: geminiPlan, model: 'gemini-test' }), ask: async () => ({ answer: 'Stay in until 2 pm.', model: 'gemini-test' }) };
+const fakeGemini = {
+  enabled: true,
+  plan: async () => ({ plan: geminiPlan, model: 'gemini-test' }),
+  ask: async () => ({ answer: 'Stay in until 2 pm.', model: 'gemini-test' }),
+};
 
 async function start(t, { air = fakeAir, gemini = fakeGemini, limits } = {}) {
   const planner = createPlanner({ air, gemini, log: quiet });
@@ -22,7 +29,11 @@ async function start(t, { air = fakeAir, gemini = fakeGemini, limits } = {}) {
   const base = `http://127.0.0.1:${server.address().port}`;
   return (path, init) => fetch(base + path, init);
 }
-const postJson = (body) => ({ method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const postJson = (body) => ({
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+});
 
 test('the page is served compressed, cacheable and behind a strict CSP', async (t) => {
   const get = await start(t);
@@ -65,13 +76,23 @@ test('air lookup by city or by coordinates', async (t) => {
   assert.equal(byCity.air.hourly.length, 24);
   const byCoords = await get('/api/air?lat=28.6139&lon=77.209&tz=Asia/Kolkata');
   assert.equal(byCoords.status, 200);
-  assert.deepEqual((await byCoords.json()).place, { lat: 28.61, lon: 77.21, tz: 'Asia/Kolkata', name: 'your location' });
+  assert.deepEqual((await byCoords.json()).place, {
+    lat: 28.61,
+    lon: 77.21,
+    tz: 'Asia/Kolkata',
+    name: 'your location',
+  });
   assert.equal(byCoords.headers.get('cache-control'), 'no-store');
 });
 
 test('bad air lookups explain what is wrong', async (t) => {
   const get = await start(t);
-  const cases = [['/api/air?q=%3C%3E', 400, /city/], ['/api/air?lat=200&lon=0', 400, /Latitude/], ['/api/air', 400, /Latitude/], ['/api/air?q=Atlantis', 404, /Atlantis/]];
+  const cases = [
+    ['/api/air?q=%3C%3E', 400, /city/],
+    ['/api/air?lat=200&lon=0', 400, /Latitude/],
+    ['/api/air', 400, /Latitude/],
+    ['/api/air?q=Atlantis', 404, /Atlantis/],
+  ];
   for (const [path, status, message] of cases) {
     const res = await get(path);
     assert.equal(res.status, status, path);
@@ -111,8 +132,12 @@ test('plan and ask bodies are checked before any work is done', async (t) => {
     [postJson({ place: delhi, profile: { ...family, language: 'klingon' } }), 400],
     [postJson({ profile: family }), 400],
   ];
-  for (const [init, status] of cases) assert.equal((await get('/api/plan', init)).status, status, init.body?.slice?.(0, 40));
-  const ask = await get('/api/ask', postJson({ place: delhi, profile: family, question: 'Can my son play cricket today?' }));
+  for (const [init, status] of cases)
+    assert.equal((await get('/api/plan', init)).status, status, init.body?.slice?.(0, 40));
+  const ask = await get(
+    '/api/ask',
+    postJson({ place: delhi, profile: family, question: 'Can my son play cricket today?' }),
+  );
   assert.deepEqual(await ask.json(), { answer: 'Stay in until 2 pm.', model: 'gemini-test' });
   assert.equal((await get('/api/ask', postJson({ place: delhi, profile: family, question: '' }))).status, 400);
 });
@@ -124,17 +149,35 @@ test('rate limits answer 429 with Retry-After, per route group', async (t) => {
   const limited = await get('/api/air?q=Delhi');
   assert.equal(limited.status, 429);
   assert.ok(Number(limited.headers.get('retry-after')) > 0);
-  assert.equal((await get('/api/plan', postJson({ place: delhi, profile: family }))).status, 200, 'separate budget for AI routes');
+  assert.equal(
+    (await get('/api/plan', postJson({ place: delhi, profile: family }))).status,
+    200,
+    'separate budget for AI routes',
+  );
   assert.equal((await get('/api/ask', postJson({ place: delhi, profile: family, question: 'Hi there' }))).status, 429);
 });
 
 test('upstream trouble is a friendly 502, and unexpected errors never leak details', async (t) => {
-  const broken = await start(t, { air: { ...fakeAir, lookup: async () => { throw new UpstreamError('open-meteo answered 500'); } } });
+  const broken = await start(t, {
+    air: {
+      ...fakeAir,
+      lookup: async () => {
+        throw new UpstreamError('open-meteo answered 500');
+      },
+    },
+  });
   const res = await broken('/api/air?q=Delhi');
   assert.equal(res.status, 502);
   assert.match((await res.json()).error, /unavailable right now/);
 
-  const crashing = await start(t, { air: { ...fakeAir, lookup: async () => { throw new TypeError('secret internals at /srv/x.js'); } } });
+  const crashing = await start(t, {
+    air: {
+      ...fakeAir,
+      lookup: async () => {
+        throw new TypeError('secret internals at /srv/x.js');
+      },
+    },
+  });
   const crash = await crashing('/api/air?q=Delhi');
   assert.equal(crash.status, 500);
   assert.deepEqual(await crash.json(), { error: 'Something went wrong on our side. Please try again.' });

@@ -5,7 +5,10 @@ import { commuteImpact } from '../src/impact.js';
 test('a 10 km car commute, 5 days a week', () => {
   const { current, alternatives } = commuteImpact({ mode: 'car', km: 10, days: 5 });
   assert.deepEqual(current, { mode: 'car', label: 'Car or cab', weeklyKm: 100, kgPerWeek: 15, exposure: 'medium' });
-  assert.deepEqual(alternatives.map((a) => a.mode), ['metro', 'bus', 'two_wheeler', 'wfh']);
+  assert.deepEqual(
+    alternatives.map((a) => a.mode),
+    ['metro', 'bus', 'two_wheeler', 'wfh'],
+  );
   const metro = alternatives[0];
   assert.equal(metro.savedKgPerWeek, 12);
   assert.equal(metro.savedKgPerYear, 624);
@@ -23,5 +26,8 @@ test('nothing to swap when the commute already emits least', () => {
   assert.deepEqual(commuteImpact({ mode: 'wfh', km: 0, days: 0 }).alternatives, []);
   assert.deepEqual(commuteImpact({ mode: 'walk_cycle', km: 3, days: 5 }).alternatives, []);
   const metro = commuteImpact({ mode: 'metro', km: 10, days: 5 });
-  assert.ok(metro.alternatives.every((a) => a.savedKgPerWeek > 0), 'no "swap" that saves nothing');
+  assert.ok(
+    metro.alternatives.every((a) => a.savedKgPerWeek > 0),
+    'no "swap" that saves nothing',
+  );
 });

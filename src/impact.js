@@ -24,7 +24,13 @@ const round1 = (n) => Math.round(n * 10) / 10;
 export function commuteImpact({ mode, km, days }) {
   const weeklyKm = km * 2 * days;
   const kgPerWeek = (m) => round1(MODES[m].kgPerKm * weeklyKm);
-  const current = { mode, label: MODES[mode].label, weeklyKm, kgPerWeek: kgPerWeek(mode), exposure: MODES[mode].exposure };
+  const current = {
+    mode,
+    label: MODES[mode].label,
+    weeklyKm,
+    kgPerWeek: kgPerWeek(mode),
+    exposure: MODES[mode].exposure,
+  };
   if (mode === 'wfh' || weeklyKm === 0) return { current, alternatives: [] };
 
   const options = ['metro', 'bus'];
@@ -41,7 +47,13 @@ export function commuteImpact({ mode, km, days }) {
   // One extra work-from-home day on the smoggiest day of the week: often the easiest win.
   if (days > 1) {
     const saved = round1(current.kgPerWeek / days);
-    alternatives.push({ mode: 'wfh', label: 'One more day working from home', kgPerWeek: round1(current.kgPerWeek - saved), exposure: 'low', ...yearly(saved) });
+    alternatives.push({
+      mode: 'wfh',
+      label: 'One more day working from home',
+      kgPerWeek: round1(current.kgPerWeek - saved),
+      exposure: 'low',
+      ...yearly(saved),
+    });
   }
   return {
     current,

@@ -30,13 +30,21 @@ export const googleCurrent = {
 export const googleForecast = {
   hourlyForecasts: Array.from({ length: 24 }, (_, h) => ({
     dateTime: hourIso(h + 1),
-    pollutants: [{ code: 'pm25', concentration: { value: h <= 3 ? 60 : h >= 9 && h <= 14 ? 280 : 200, units: 'MICROGRAMS_PER_CUBIC_METER' } }],
+    pollutants: [
+      {
+        code: 'pm25',
+        concentration: { value: h <= 3 ? 60 : h >= 9 && h <= 14 ? 280 : 200, units: 'MICROGRAMS_PER_CUBIC_METER' },
+      },
+    ],
   })),
 };
 
 export const openMeteo = {
   current: { time: NOW / 1000, interval: 3600, pm2_5: 180.4, pm10: 260, nitrogen_dioxide: 70.1, ozone: null },
-  hourly: { time: Array.from({ length: 26 }, (_, h) => Date.parse(hourIso(h - 1)) / 1000), pm2_5: Array.from({ length: 26 }, () => 150) },
+  hourly: {
+    time: Array.from({ length: 26 }, (_, h) => Date.parse(hourIso(h - 1)) / 1000),
+    pm2_5: Array.from({ length: 26 }, () => 150),
+  },
 };
 
 export const delhiAir = () => summarize(parseGoogle(googleCurrent, googleForecast), delhi.tz, NOW);
@@ -51,17 +59,45 @@ export const family = readProfile({
   language: 'en',
 });
 
-export const delhiContext = () => ({ place: delhi, air: delhiAir(), profile: family, commute: commuteImpact(family.commute) });
+export const delhiContext = () => ({
+  place: delhi,
+  air: delhiAir(),
+  profile: family,
+  commute: commuteImpact(family.commute),
+});
 
 /** A plan shaped like Gemini's structured output. */
 export const geminiPlan = {
   summary: 'Severe smog today. Keep your child indoors and plan outings for 2–5 pm.',
   alerts: ['Keep your child indoors this morning.'],
   routine: [
-    { time: '2–5 pm', title: 'Short walk in the clean window', action: 'Take your child out for 20 minutes.', why: 'AQI averages 154 then.', impact: 'Halves the dose compared with now.', impactType: 'exposure' },
+    {
+      time: '2–5 pm',
+      title: 'Short walk in the clean window',
+      action: 'Take your child out for 20 minutes.',
+      why: 'AQI averages 154 then.',
+      impact: 'Halves the dose compared with now.',
+      impactType: 'exposure',
+    },
   ],
-  indoor: [{ title: 'Box-fan filter', action: 'Strap a MERV-13 filter to a fan.', why: 'Traps fine particles.', impact: 'Substantially cuts PM2.5.', impactType: 'exposure' }],
-  swaps: [{ title: 'Metro twice a week', action: 'Take the metro on Tuesdays and Thursdays.', why: 'Cars emit 5× more per km.', impact: 'Saves 7.2 kg CO2e a week.', impactType: 'both' }],
+  indoor: [
+    {
+      title: 'Box-fan filter',
+      action: 'Strap a MERV-13 filter to a fan.',
+      why: 'Traps fine particles.',
+      impact: 'Substantially cuts PM2.5.',
+      impactType: 'exposure',
+    },
+  ],
+  swaps: [
+    {
+      title: 'Metro twice a week',
+      action: 'Take the metro on Tuesdays and Thursdays.',
+      why: 'Cars emit 5× more per km.',
+      impact: 'Saves 7.2 kg CO2e a week.',
+      impactType: 'both',
+    },
+  ],
 };
 
 /** A fetch stand-in: routes are [urlFragment, status, body]; unmatched URLs fail like a dead network. */

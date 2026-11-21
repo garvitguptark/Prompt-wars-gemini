@@ -2,19 +2,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readProfile, readPlace, readCityQuery, readQuestion, cleanText, InputError } from '../src/profile.js';
 
-const rejects = (fn, pattern) => assert.throws(fn, (err) => err instanceof InputError && err.status === 400 && pattern.test(err.message));
+const rejects = (fn, pattern) =>
+  assert.throws(fn, (err) => err instanceof InputError && err.status === 400 && pattern.test(err.message));
 
 test('an empty profile gets safe defaults', () => {
   assert.deepEqual(readProfile({}), {
-    household: [], commute: { mode: 'wfh', km: 0, days: 0 }, exercise: 'none',
-    purifier: false, cooking: 'gas', notes: '', language: 'en',
+    household: [],
+    commute: { mode: 'wfh', km: 0, days: 0 },
+    exercise: 'none',
+    purifier: false,
+    cooking: 'gas',
+    notes: '',
+    language: 'en',
   });
 });
 
 test('a full profile is normalised', () => {
   const p = readProfile({
-    household: ['children', 'children', 'respiratory'], commute: { mode: 'car', km: '12.34', days: 5 },
-    exercise: 'morning', purifier: true, cooking: 'biomass', notes: '  near the   highway ', language: 'hi',
+    household: ['children', 'children', 'respiratory'],
+    commute: { mode: 'car', km: '12.34', days: 5 },
+    exercise: 'morning',
+    purifier: true,
+    cooking: 'biomass',
+    notes: '  near the   highway ',
+    language: 'hi',
   });
   assert.deepEqual(p.household, ['children', 'respiratory']);
   assert.deepEqual(p.commute, { mode: 'car', km: 12.3, days: 5 });
@@ -38,8 +49,12 @@ test('free text cannot smuggle control characters or tags into the prompt', () =
 });
 
 test('places are range-checked and rounded to about a kilometre', () => {
-  assert.deepEqual(readPlace({ lat: 28.61394, lon: 77.20902, tz: 'Asia/Kolkata', name: 'New Delhi' }),
-    { lat: 28.61, lon: 77.21, tz: 'Asia/Kolkata', name: 'New Delhi' });
+  assert.deepEqual(readPlace({ lat: 28.61394, lon: 77.20902, tz: 'Asia/Kolkata', name: 'New Delhi' }), {
+    lat: 28.61,
+    lon: 77.21,
+    tz: 'Asia/Kolkata',
+    name: 'New Delhi',
+  });
   assert.equal(readPlace({ lat: 1, lon: 1, tz: 'Mars/Olympus' }).tz, 'UTC');
   assert.equal(readPlace({ lat: 1, lon: 1 }).name, 'your area');
   rejects(() => readPlace({ lat: 91, lon: 0 }), /Latitude/);

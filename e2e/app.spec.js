@@ -7,7 +7,9 @@ import { delhiContext } from '../test/fixtures.js';
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 // Audit only once entrance animations have finished: half-faded text would read as low contrast.
 async function audit(page) {
-  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity),
+  );
   return (await new AxeBuilder({ page }).withTags(WCAG).analyze()).violations.map((v) => `${v.id}: ${v.help}`);
 }
 
@@ -93,6 +95,9 @@ test('no sideways scrolling, even at 320 px', async ({ page }) => {
 test('reduced motion turns animation off', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  const seconds = await page.locator('.btn.primary').first().evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration));
+  const seconds = await page
+    .locator('.btn.primary')
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration));
   expect(seconds).toBeLessThan(0.01);
 });

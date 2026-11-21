@@ -13,7 +13,10 @@ try {
   // No .env file: use the real environment (Cloud Run injects variables and Secret Manager secrets).
 }
 
-const models = (process.env.GEMINI_MODELS ?? '').split(',').map((m) => m.trim()).filter(Boolean);
+const models = (process.env.GEMINI_MODELS ?? '')
+  .split(',')
+  .map((m) => m.trim())
+  .filter(Boolean);
 const air = createAirService({ mapsKey: process.env.MAPS_API_KEY ?? '' });
 const gemini = createGemini({ client: clientFromEnv(), models: models.length ? models : DEFAULT_MODELS });
 const planner = createPlanner({ air, gemini });
