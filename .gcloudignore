@@ -1,0 +1,6 @@
+# Files Cloud Build never receives: secrets, dependencies it installs itself, and repo-only files.
+.env
+node_modules/
+.git/
+.github/
+test/
