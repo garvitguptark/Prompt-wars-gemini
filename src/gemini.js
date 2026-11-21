@@ -63,14 +63,24 @@ const ITEM = {
 };
 const itemSchema = (extra = {}) => {
   const properties = { ...extra, ...ITEM };
-  return { type: Type.OBJECT, properties, required: Object.keys(properties), propertyOrdering: Object.keys(properties) };
+  return {
+    type: Type.OBJECT,
+    properties,
+    required: Object.keys(properties),
+    propertyOrdering: Object.keys(properties),
+  };
 };
 export const PLAN_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     summary: text("2–3 sentences: what today's air means for this household and the single most important thing to do"),
     alerts: { type: Type.ARRAY, items: text('An urgent warning for a sensitive person'), maxItems: '3' },
-    routine: { type: Type.ARRAY, items: itemSchema({ time: text('Local time or range, e.g. "7–9 am"') }), minItems: '3', maxItems: '7' },
+    routine: {
+      type: Type.ARRAY,
+      items: itemSchema({ time: text('Local time or range, e.g. "7–9 am"') }),
+      minItems: '3',
+      maxItems: '7',
+    },
     indoor: { type: Type.ARRAY, items: itemSchema(), minItems: '2', maxItems: '5' },
     swaps: { type: Type.ARRAY, items: itemSchema(), minItems: '1', maxItems: '4' },
   },
@@ -81,43 +91,55 @@ export const PLAN_SCHEMA = {
 /** Builds the client from the environment: Vertex AI (Cloud Run service account, no key) or a Gemini API key. */
 export function clientFromEnv(env = process.env) {
   if (env.GOOGLE_GENAI_USE_VERTEXAI === 'true') {
-    return new GoogleGenAI({ vertexai: true, project: env.GOOGLE_CLOUD_PROJECT, location: env.GOOGLE_CLOUD_LOCATION || 'global' });
+    return new GoogleGenAI({
+      vertexai: true,
+      project: env.GOOGLE_CLOUD_PROJECT,
+      location: env.GOOGLE_CLOUD_LOCATION || 'global',
+    });
   }
   const apiKey = env.GEMINI_API_KEY || env.GOOGLE_API_KEY;
   return apiKey ? new GoogleGenAI({ apiKey }) : null;
 }
 
-/**
- * @param {object} deps
- * @param {{ models: { generateContent: Function } } | null} deps.client  a GoogleGenAI instance, or null to disable
- * @param {string[]} [deps.models]  model IDs to try in order
- */
-export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 30_000, budgetMs = 50_000, log = defaultLog, now = Date.now } = {}) {
-  const noThinkingLevel = new Set(); // models that rejected thinkingLevel; they get the request without it
-  const coolingUntil = new Map(); // model -> when it may be tried again after failing
+/** An older model that refuses the thinking setting answers fine without it. */
+const rejectsThinking = (err, sentThinking) => err.status === 400 && sentThinking && /thinking/i.test(err.message);
+/** Overloads, timeouts and missing models are worth handing to the next model; anything else is our request's fault. */
+const worthNextModel = (err) => !err.status || RETRYABLE.has(err.status);
 
-  async function generate(contents, config, level = ThinkingLevel.LOW) {
+/**
+ * Calls the models in order until one answers, within a total time budget. A model that just failed moves to the
+ * back of the line for a while; a model that rejects the thinking setting is retried once without it.
+ */
+function modelChain({ client, models, timeoutMs, budgetMs, log, now }) {
+  const noThinkingLevel = new Set();
+  const coolingUntil = new Map(); // model -> when it may lead the line again
+  const cooling = (m) => (coolingUntil.get(m) ?? 0) > now();
+
+  return async function generate(contents, config, level) {
     if (!client) throw Object.assign(new Error('Gemini is not configured'), { status: 503 });
     const deadline = now() + budgetMs;
-    const cooling = (m) => (coolingUntil.get(m) ?? 0) > now();
     const order = [...models.filter((m) => !cooling(m)), ...models.filter(cooling)];
     let lastError;
-    for (let i = 0; i < order.length; ) {
+    for (let i = 0; i < order.length;) {
       const model = order[i];
       const remaining = deadline - now();
       if (remaining < 2_000) break;
-      const thinking = noThinkingLevel.has(model) ? {} : { thinkingConfig: { thinkingLevel: level } }; // kept low: a family is waiting
+      const sendThinking = !noThinkingLevel.has(model);
+      const thinking = sendThinking ? { thinkingConfig: { thinkingLevel: level } } : {};
+      const httpOptions = { timeout: Math.min(timeoutMs, remaining) };
       try {
         const res = await client.models.generateContent({
-          model, contents, config: { ...config, ...thinking, httpOptions: { timeout: Math.min(timeoutMs, remaining) } },
+          model,
+          contents,
+          config: { ...config, ...thinking, httpOptions },
         });
         return { text: res.text ?? '', model };
       } catch (err) {
-        if (err.status === 400 && thinking.thinkingConfig && /thinking/i.test(err.message)) {
-          noThinkingLevel.add(model); // older model: retry it once without the thinking setting
+        if (rejectsThinking(err, sendThinking)) {
+          noThinkingLevel.add(model);
           continue;
         }
-        if (err.status && !RETRYABLE.has(err.status)) throw err;
+        if (!worthNextModel(err)) throw err;
         log('WARNING', 'Gemini model unavailable, trying the next one', { model, status: err.status ?? err.name });
         coolingUntil.set(model, now() + (err.status === 404 ? COOLDOWN_MS.missing : COOLDOWN_MS.busy));
         lastError = err;
@@ -125,21 +147,42 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 30_0
       }
     }
     throw lastError ?? new Error('Gemini did not answer in time');
-  }
+  };
+}
 
+/**
+ * @param {object} deps
+ * @param {{ models: { generateContent: Function } } | null} deps.client  a GoogleGenAI instance, or null to disable
+ * @param {string[]} [deps.models]  model IDs to try in order
+ */
+export function createGemini({
+  client,
+  models = DEFAULT_MODELS,
+  timeoutMs = 30_000,
+  budgetMs = 50_000,
+  log = defaultLog,
+  now = Date.now,
+} = {}) {
+  const generate = modelChain({ client, models, timeoutMs, budgetMs, log, now });
   return {
     enabled: Boolean(client),
     models,
     /** A structured plan for today: { plan, model }. Throws if Gemini fails or returns an unusable plan. */
     async plan(ctx) {
-      const { text: json, model } = await generate(planPrompt(ctx), {
-        systemInstruction: PLAN_SYSTEM, responseMimeType: 'application/json', responseSchema: PLAN_SCHEMA, temperature: 0.5,
-      }, ThinkingLevel.MINIMAL); // the facts are computed in code, so a long JSON reply needs little reasoning
+      const config = {
+        systemInstruction: PLAN_SYSTEM,
+        responseMimeType: 'application/json',
+        responseSchema: PLAN_SCHEMA,
+        temperature: 0.5,
+      };
+      // The facts are computed in code, so a long JSON reply needs little reasoning: minimal thinking keeps it fast.
+      const { text: json, model } = await generate(planPrompt(ctx), config, ThinkingLevel.MINIMAL);
       return { plan: sanitizePlan(JSON.parse(json)), model };
     },
     /** A short plain-text answer to a follow-up question: { answer, model }. */
     async ask(ctx, question) {
-      const { text: raw, model } = await generate(askPrompt(ctx, question), { systemInstruction: ASK_SYSTEM, temperature: 0.4 });
+      const config = { systemInstruction: ASK_SYSTEM, temperature: 0.4 };
+      const { text: raw, model } = await generate(askPrompt(ctx, question), config, ThinkingLevel.LOW);
       const answer = cleanAnswer(raw);
       if (!answer) throw new Error('Gemini returned an empty answer');
       return { answer, model };
@@ -147,55 +190,110 @@ export function createGemini({ client, models = DEFAULT_MODELS, timeoutMs = 30_0
   };
 }
 
-/** The <data> and <household> blocks both prompts share. */
-export function describe({ place, air, profile, commute }, nowMs = Date.now()) {
-  const tz = place.tz;
-  const when = (iso) => new Intl.DateTimeFormat('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz }).format(new Date(iso));
-  const data = [
-    `Place: ${place.name} (time zone ${tz}). Local time now: ${when(nowMs)}.`,
+function airLines(place, air, when) {
+  const lines = [
+    `Place: ${place.name} (time zone ${place.tz}). Local time now: ${when.now}.`,
     `Air now: US AQI ${air.aqi} (${air.band.label}) from PM2.5 of ${air.pm25} µg/m³, ${air.whoMultiple}× the WHO 24-hour guideline. ` +
-      `Dominant pollutant: ${air.dominant ?? 'not reported'}. Source: ${air.source}, updated ${when(air.updated)}.`,
+      `Dominant pollutant: ${air.dominant ?? 'not reported'}. Source: ${air.source}, updated ${when.updated}.`,
   ];
-  if (air.localIndex) data.push(`Official local index: ${air.localIndex.name} ${air.localIndex.aqi}, "${air.localIndex.category}".`);
+  if (air.localIndex) {
+    lines.push(`Official local index: ${air.localIndex.name} ${air.localIndex.aqi}, "${air.localIndex.category}".`);
+  }
   const others = air.pollutants.filter((p) => p.code !== 'pm25');
-  if (others.length) data.push(`Other pollutants: ${others.map((p) => `${p.name} ${p.value} ${p.units}`).join(', ')}.`);
-  if (air.hourly.length) data.push(`Next hours (local time: US AQI): ${air.hourly.map((h) => `${hourLabel(h.time, tz)} ${h.aqi}`).join(', ')}.`);
+  if (others.length)
+    lines.push(`Other pollutants: ${others.map((p) => `${p.name} ${p.value} ${p.units}`).join(', ')}.`);
+  return lines;
+}
+
+function forecastLines(air, tz) {
+  const lines = [];
+  if (air.hourly.length) {
+    lines.push(
+      `Next hours (local time: US AQI): ${air.hourly.map((h) => `${hourLabel(h.time, tz)} ${h.aqi}`).join(', ')}.`,
+    );
+  }
   if (air.windows) {
     const { cleanest, worst } = air.windows;
-    data.push(`Cleanest 3 hours (6 am–10 pm): ${rangeLabel(cleanest, tz)}, average AQI ${cleanest.avgAqi} (${cleanest.band.label}).`);
-    data.push(`Worst 3 hours: ${rangeLabel(worst, tz)}, average AQI ${worst.avgAqi} (${worst.band.label}).`);
+    lines.push(
+      `Cleanest 3 hours (6 am–10 pm): ${rangeLabel(cleanest, tz)}, average AQI ${cleanest.avgAqi} (${cleanest.band.label}).`,
+      `Worst 3 hours: ${rangeLabel(worst, tz)}, average AQI ${worst.avgAqi} (${worst.band.label}).`,
+    );
   }
-  if (air.health) {
-    const groups = { generalPopulation: true, children: profile.household.includes('children'), elderly: profile.household.includes('elderly'),
-      lungDiseasePopulation: profile.household.includes('respiratory'), heartDiseasePopulation: profile.household.includes('respiratory'),
-      pregnantWomen: profile.household.includes('pregnant'), athletes: profile.exercise !== 'none' };
-    const advice = Object.entries(air.health).filter(([k, v]) => groups[k] && v).map(([k, v]) => `${k}: "${String(v).slice(0, 300)}"`);
-    if (advice.length) data.push(`Health advice from the data source: ${advice.join('; ')}.`);
-  }
-  const { current, alternatives } = commute;
-  if (current.mode === 'wfh') data.push('Commute: works from home.');
-  else {
-    data.push(`Commute: ${current.label}, ${profile.commute.km} km each way, ${profile.commute.days} days a week = ${current.weeklyKm} km and ${current.kgPerWeek} kg CO2e a week; exposure while commuting: ${current.exposure}.`);
-    for (const a of alternatives) {
-      data.push(`Alternative, ${a.label}: ${a.kgPerWeek} kg CO2e a week, saving ${a.savedKgPerWeek} kg a week (${a.savedKgPerYear} kg a year, about the yearly CO2 uptake of ${a.trees} trees); exposure ${a.exposure}.`);
-    }
-  }
-  const members = profile.household.map((h) => HOUSEHOLD[h]);
-  const household = [
+  return lines;
+}
+
+/** The data source's health advice, only for the groups that live in this household. */
+function healthLines(health, profile) {
+  if (!health) return [];
+  const has = (member) => profile.household.includes(member);
+  const relevant = {
+    generalPopulation: true,
+    children: has('children'),
+    elderly: has('elderly'),
+    lungDiseasePopulation: has('respiratory'),
+    heartDiseasePopulation: has('respiratory'),
+    pregnantWomen: has('pregnant'),
+    athletes: profile.exercise !== 'none',
+  };
+  const advice = Object.entries(health)
+    .filter(([group, tip]) => relevant[group] && tip)
+    .map(([group, tip]) => `${group}: "${String(tip).slice(0, 300)}"`);
+  return advice.length ? [`Health advice from the data source: ${advice.join('; ')}.`] : [];
+}
+
+function commuteLines({ current, alternatives }, profile) {
+  if (current.mode === 'wfh') return ['Commute: works from home.'];
+  const { km, days } = profile.commute;
+  return [
+    `Commute: ${current.label}, ${km} km each way, ${days} days a week = ${current.weeklyKm} km and ${current.kgPerWeek} kg CO2e a week; exposure while commuting: ${current.exposure}.`,
+    ...alternatives.map(
+      (a) =>
+        `Alternative, ${a.label}: ${a.kgPerWeek} kg CO2e a week, saving ${a.savedKgPerWeek} kg a week (${a.savedKgPerYear} kg a year, about the yearly CO2 uptake of ${a.trees} trees); exposure ${a.exposure}.`,
+    ),
+  ];
+}
+
+function householdLines(profile) {
+  const members = profile.household.map((member) => HOUSEHOLD[member]);
+  return [
     `At home: ${members.length ? members.join(', ') : 'no one in a sensitive group'}.`,
     `Exercise: ${EXERCISE[profile.exercise]}.`,
     `Air purifier: ${profile.purifier ? 'yes' : 'no'}.`,
     `Cooking: ${COOKING[profile.cooking]}.`,
     `Notes: ${profile.notes ? `"${profile.notes}"` : 'none'}.`,
   ];
-  return { data: data.join('\n'), household: household.join('\n'), language: LANGUAGES[profile.language] };
+}
+
+/** The <data> and <household> blocks both prompts share, with times in the place's own time zone. */
+export function describe({ place, air, profile, commute }, nowMs = Date.now()) {
+  const format = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: place.tz,
+  });
+  const when = { now: format.format(new Date(nowMs)), updated: format.format(new Date(air.updated)) };
+  const data = [
+    ...airLines(place, air, when),
+    ...forecastLines(air, place.tz),
+    ...healthLines(air.health, profile),
+    ...commuteLines(commute, profile),
+  ];
+  return {
+    data: data.join('\n'),
+    household: householdLines(profile).join('\n'),
+    language: LANGUAGES[profile.language],
+  };
 }
 
 export function planPrompt(ctx, nowMs) {
   const { data, household, language } = describe(ctx, nowMs);
-  return `<data>\n${data}\n</data>\n\n<household>\n${household}\n</household>\n\n` +
+  return (
+    `<data>\n${data}\n</data>\n\n<household>\n${household}\n</household>\n\n` +
     `Write today's plan in ${language}. Give 4–6 routine items in time order from now until bedtime, 3–4 indoor air items, ` +
-    'and 2–3 swaps that cut the pollution this household causes. Write numbers as digits.';
+    'and 2–3 swaps that cut the pollution this household causes. Write numbers as digits.'
+  );
 }
 
 export function askPrompt(ctx, question, nowMs) {
@@ -204,22 +302,32 @@ export function askPrompt(ctx, question, nowMs) {
 }
 
 const IMPACT_TYPES = new Set(['exposure', 'emissions', 'both']);
-const str = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+const str = (v, max) =>
+  String(v ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
 
 /** Keeps only well-formed fields, caps lengths and counts, and refuses a plan with nothing to do. */
 export function sanitizePlan(raw) {
   const items = (list, max, withTime) =>
-    (Array.isArray(list) ? list : []).slice(0, max).map((it = {}) => ({
-      ...(withTime ? { time: str(it.time, 40) } : {}),
-      title: str(it.title, 80),
-      action: str(it.action, 320),
-      why: str(it.why, 320),
-      impact: str(it.impact, 320),
-      impactType: IMPACT_TYPES.has(it.impactType) ? it.impactType : 'both',
-    })).filter((it) => it.title && it.action);
+    (Array.isArray(list) ? list : [])
+      .slice(0, max)
+      .map((it = {}) => ({
+        ...(withTime ? { time: str(it.time, 40) } : {}),
+        title: str(it.title, 80),
+        action: str(it.action, 320),
+        why: str(it.why, 320),
+        impact: str(it.impact, 320),
+        impactType: IMPACT_TYPES.has(it.impactType) ? it.impactType : 'both',
+      }))
+      .filter((it) => it.title && it.action);
   const plan = {
     summary: str(raw?.summary, 700),
-    alerts: (Array.isArray(raw?.alerts) ? raw.alerts : []).slice(0, 3).map((a) => str(a, 320)).filter(Boolean),
+    alerts: (Array.isArray(raw?.alerts) ? raw.alerts : [])
+      .slice(0, 3)
+      .map((a) => str(a, 320))
+      .filter(Boolean),
     routine: items(raw?.routine, 7, true),
     indoor: items(raw?.indoor, 5),
     swaps: items(raw?.swaps, 4),
@@ -229,4 +337,9 @@ export function sanitizePlan(raw) {
 }
 
 /** Plain text for the answer box: no markdown symbols, at most two line breaks in a row. */
-export const cleanAnswer = (raw) => String(raw ?? '').replace(/[*#`]+/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1200);
+export const cleanAnswer = (raw) =>
+  String(raw ?? '')
+    .replace(/[*#`]+/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, 1200);

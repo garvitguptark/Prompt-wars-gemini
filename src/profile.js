@@ -4,7 +4,14 @@
 import { MODES } from './impact.js';
 
 export const LANGUAGES = {
-  en: 'English', hi: 'Hindi', bn: 'Bengali', pa: 'Punjabi', ur: 'Urdu', mr: 'Marathi', ta: 'Tamil', te: 'Telugu',
+  en: 'English',
+  hi: 'Hindi',
+  bn: 'Bengali',
+  pa: 'Punjabi',
+  ur: 'Urdu',
+  mr: 'Marathi',
+  ta: 'Tamil',
+  te: 'Telugu',
 };
 export const HOUSEHOLD = {
   children: 'children',
@@ -12,7 +19,11 @@ export const HOUSEHOLD = {
   respiratory: 'someone with asthma or a lung or heart condition',
   pregnant: 'someone who is pregnant',
 };
-export const EXERCISE = { none: 'none outdoors', morning: 'outdoors in the morning', evening: 'outdoors in the evening' };
+export const EXERCISE = {
+  none: 'none outdoors',
+  morning: 'outdoors in the morning',
+  evening: 'outdoors in the evening',
+};
 export const COOKING = { gas: 'gas or LPG stove', induction: 'induction or electric', biomass: 'wood, coal or dung' };
 
 export class InputError extends Error {
@@ -34,11 +45,13 @@ export function cleanText(value, max) {
 
 function number(value, name, min, max) {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
-  if (typeof n !== 'number' || !Number.isFinite(n) || n < min || n > max) fail(`${name} must be a number from ${min} to ${max}.`);
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < min || n > max)
+    fail(`${name} must be a number from ${min} to ${max}.`);
   return n;
 }
 
-const oneOf = (value, table, name) => (Object.hasOwn(table, value) ? value : fail(`${name} is not a supported choice.`));
+const oneOf = (value, table, name) =>
+  Object.hasOwn(table, value) ? value : fail(`${name} is not a supported choice.`);
 
 export function isTimeZone(tz) {
   if (typeof tz !== 'string' || tz.length > 64) return false;

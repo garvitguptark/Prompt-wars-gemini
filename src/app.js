@@ -9,8 +9,16 @@ import { log as defaultLog } from './log.js';
 
 export const SECURITY_HEADERS = {
   'content-security-policy': [
-    "default-src 'self'", "script-src 'self'", "style-src 'self' https://fonts.googleapis.com", 'font-src https://fonts.gstatic.com',
-    "img-src 'self' data:", "connect-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' https://fonts.googleapis.com",
+    'font-src https://fonts.gstatic.com',
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
   ].join('; '),
   'strict-transport-security': 'max-age=63072000; includeSubDomains',
   'x-content-type-options': 'nosniff',
@@ -22,8 +30,11 @@ export const SECURITY_HEADERS = {
 };
 
 const TYPES = {
-  '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.txt': 'text/plain; charset=utf-8',
 };
 const MAX_BODY = 16 * 1024;
 
@@ -52,7 +63,8 @@ export function rateLimiter(max, windowMs, now = Date.now) {
 }
 
 /** Cloud Run's front end appends the caller's address last; anything before it was sent by the client and can be faked. */
-export const clientIp = (req) => req.headers['x-forwarded-for']?.split(',').at(-1).trim() || req.socket.remoteAddress || 'unknown';
+export const clientIp = (req) =>
+  req.headers['x-forwarded-for']?.split(',').at(-1).trim() || req.socket.remoteAddress || 'unknown';
 
 /** Every file in `dir`, read once and pre-compressed, so serving one is a Map lookup (and no path ever touches the disk). */
 export function loadStatic(dir) {
@@ -75,7 +87,8 @@ export function loadStatic(dir) {
 }
 
 async function readJson(req) {
-  if (!/^application\/json\b/i.test(req.headers['content-type'] ?? '')) throw new HttpError(415, 'Send JSON with Content-Type: application/json.');
+  if (!/^application\/json\b/i.test(req.headers['content-type'] ?? ''))
+    throw new HttpError(415, 'Send JSON with Content-Type: application/json.');
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
@@ -86,13 +99,19 @@ async function readJson(req) {
   try {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (body && typeof body === 'object') return body;
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
   throw new InputError('Request body must be a JSON object.');
 }
 
 function sendJson(res, status, body) {
   const json = JSON.stringify(body);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': Buffer.byteLength(json) });
+  res.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'content-length': Buffer.byteLength(json),
+  });
   res.end(json);
 }
 
@@ -103,30 +122,27 @@ function sendFile(req, res, file) {
     return res.end();
   }
   const accepts = req.headers['accept-encoding'] ?? '';
-  const [body, encoding] = /\bbr\b/.test(accepts) ? [file.br, 'br'] : /\bgzip\b/.test(accepts) ? [file.gzip, 'gzip'] : [file.body];
+  const [body, encoding] = /\bbr\b/.test(accepts)
+    ? [file.br, 'br']
+    : /\bgzip\b/.test(accepts)
+      ? [file.gzip, 'gzip']
+      : [file.body];
   if (encoding) headers['content-encoding'] = encoding;
   res.writeHead(200, { ...headers, 'content-length': body.length });
   res.end(req.method === 'HEAD' ? undefined : body);
 }
 
-/**
- * @param {object} deps
- * @param {{ lookup: Function, geocode: Function }} deps.air
- * @param {{ plan: Function, ask: Function }} deps.planner
- * @param {string} deps.publicDir  folder of static files
- */
-export function createApp({ air, planner, publicDir, log = defaultLog, limits = { air: [60, 600_000], ai: [20, 600_000] } }) {
-  const files = loadStatic(publicDir);
-  const limit = { air: rateLimiter(...limits.air), ai: rateLimiter(...limits.ai) };
-
-  const routes = {
+/** The JSON routes. `group` names the rate limit a route counts against. */
+function apiRoutes({ air, planner }) {
+  return {
     'GET /health': { run: async () => ({ status: 'ok' }) },
     'GET /api/air': {
       group: 'air',
       async run(req, url) {
-        const q = url.searchParams.get('q');
         const p = url.searchParams;
-        const place = q ? await air.geocode(readCityQuery(q)) : readPlace({ lat: p.get('lat'), lon: p.get('lon'), tz: p.get('tz'), name: 'your location' });
+        const place = p.get('q')
+          ? await air.geocode(readCityQuery(p.get('q')))
+          : readPlace({ lat: p.get('lat'), lon: p.get('lon'), tz: p.get('tz'), name: 'your location' });
         return { place, air: await air.lookup(place) };
       },
     },
@@ -146,42 +162,84 @@ export function createApp({ air, planner, publicDir, log = defaultLog, limits = 
       },
     },
   };
-  const methodsFor = (path) => Object.keys(routes).filter((r) => r.endsWith(` ${path}`)).map((r) => r.split(' ')[0]);
+}
+
+function parseUrl(req) {
+  try {
+    return new URL(req.url, 'http://localhost');
+  } catch {
+    return new URL('http://localhost/');
+  }
+}
+
+/** Turns any thrown error into a JSON reply. Only 4xx messages, which we wrote, reach the client. */
+function sendError(res, err, log, path) {
+  const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600 ? err.status : 500;
+  if (status >= 500)
+    log('ERROR', err.message, { detail: err.detail, stack: status === 500 ? err.stack : undefined, path });
+  for (const [name, value] of Object.entries(err.headers ?? {})) res.setHeader(name, value);
+  if (res.headersSent) return;
+  sendJson(res, status, {
+    error: status === 500 ? 'Something went wrong on our side. Please try again.' : err.message,
+  });
+}
+
+/** One structured line per API call. Path only: the query can hold a location, which stays out of the logs. */
+function logRequest(log, req, res, path, started) {
+  const latency = `${((performance.now() - started) / 1000).toFixed(3)}s`;
+  log('INFO', `${req.method} ${path} ${res.statusCode}`, {
+    httpRequest: { requestMethod: req.method, requestUrl: path, status: res.statusCode, latency },
+  });
+}
+
+/**
+ * @param {object} deps
+ * @param {{ lookup: Function, geocode: Function }} deps.air
+ * @param {{ plan: Function, ask: Function }} deps.planner
+ * @param {string} deps.publicDir  folder of static files
+ */
+export function createApp({
+  air,
+  planner,
+  publicDir,
+  log = defaultLog,
+  limits = { air: [60, 600_000], ai: [20, 600_000] },
+}) {
+  const files = loadStatic(publicDir);
+  const limit = { air: rateLimiter(...limits.air), ai: rateLimiter(...limits.ai) };
+  const routes = apiRoutes({ air, planner });
+  const methodsFor = (path) =>
+    Object.keys(routes)
+      .filter((r) => r.endsWith(` ${path}`))
+      .map((r) => r.split(' ')[0]);
+
+  async function dispatch(req, res, url) {
+    const route = routes[`${req.method} ${url.pathname}`];
+    if (route) {
+      const wait = route.group ? limit[route.group](clientIp(req)) : 0;
+      if (wait)
+        throw new HttpError(429, 'Too many requests. Please wait a few minutes and try again.', {
+          'retry-after': String(wait),
+        });
+      return sendJson(res, 200, await route.run(req, url));
+    }
+    if ((req.method === 'GET' || req.method === 'HEAD') && files.has(url.pathname))
+      return sendFile(req, res, files.get(url.pathname));
+    const allowed = methodsFor(url.pathname);
+    if (allowed.length) throw new HttpError(405, 'Method not allowed.', { allow: allowed.join(', ') });
+    throw new HttpError(404, 'Not found.');
+  }
 
   return async function handle(req, res) {
     const started = performance.now();
-    let url;
-    try {
-      url = new URL(req.url, 'http://localhost');
-    } catch {
-      url = new URL('http://localhost/');
-    }
+    const url = parseUrl(req);
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
-    const route = routes[`${req.method} ${url.pathname}`];
     try {
-      if (route) {
-        const wait = route.group ? limit[route.group](clientIp(req)) : 0;
-        if (wait) throw new HttpError(429, 'Too many requests. Please wait a few minutes and try again.', { 'retry-after': String(wait) });
-        sendJson(res, 200, await route.run(req, url));
-      } else if ((req.method === 'GET' || req.method === 'HEAD') && files.has(url.pathname)) {
-        sendFile(req, res, files.get(url.pathname));
-      } else if (methodsFor(url.pathname).length) {
-        throw new HttpError(405, 'Method not allowed.', { allow: methodsFor(url.pathname).join(', ') });
-      } else {
-        throw new HttpError(404, 'Not found.');
-      }
+      await dispatch(req, res, url);
     } catch (err) {
-      const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600 ? err.status : 500;
-      if (status >= 500) log('ERROR', err.message, { detail: err.detail, stack: status === 500 ? err.stack : undefined, path: url.pathname });
-      for (const [name, value] of Object.entries(err.headers ?? {})) res.setHeader(name, value);
-      if (!res.headersSent) sendJson(res, status, { error: status === 500 ? 'Something went wrong on our side. Please try again.' : err.message });
+      sendError(res, err, log, url.pathname);
     } finally {
-      if (url.pathname.startsWith('/api/')) {
-        // Path only: the query can hold a location, which stays out of the logs.
-        log('INFO', `${req.method} ${url.pathname} ${res.statusCode}`, {
-          httpRequest: { requestMethod: req.method, requestUrl: url.pathname, status: res.statusCode, latency: `${((performance.now() - started) / 1000).toFixed(3)}s` },
-        });
-      }
+      if (url.pathname.startsWith('/api/')) logRequest(log, req, res, url.pathname, started);
     }
   };
 }

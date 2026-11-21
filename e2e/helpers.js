@@ -5,7 +5,12 @@ import { commuteImpact } from '../src/impact.js';
 
 export const airResponse = { place: delhi, air: delhiAir() };
 export const planResponse = (plan = rulesPlan(delhiContext())) => ({
-  place: delhi, air: delhiAir(), commute: commuteImpact(family.commute), source: 'gemini', model: 'gemini-test', plan,
+  place: delhi,
+  air: delhiAir(),
+  commute: commuteImpact(family.commute),
+  source: 'gemini',
+  model: 'gemini-test',
+  plan,
 });
 
 /** Answers /api/* from fixtures; `overrides` maps a path to a { status, json } reply. */

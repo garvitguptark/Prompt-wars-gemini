@@ -17,6 +17,7 @@ In winter smog, families check an AQI number many times a day, but a number does
    - **Sustainable swaps:** changes that cut the household's own emissions.
 
    Every item says what to do, **why** it works, and its **impact**, tagged as less exposure, less pollution, or both.
+
 3. **Impact in numbers.** The commute calculator compares the current commute with realistic alternatives in kg CO₂e a week and a year (and in trees), alongside how much traffic smog each option makes you breathe.
 4. **Ask AirWise** follow-up questions ("Can my son play cricket after school?"). Gemini answers from the same live readings.
 5. **Eight languages** for plans and answers: English, Hindi, Bengali, Punjabi, Urdu (right-to-left), Marathi, Tamil and Telugu.
@@ -25,15 +26,15 @@ In winter smog, families check an AQI number many times a day, but a number does
 
 ### How it meets the brief
 
-| The brief asks for | Where AirWise does it |
-|---|---|
-| Low-emission daily routines | **Low-emission routine**, timed with the forecast's cleanest and worst windows |
-| Indoor air quality hacks | **Indoor air hacks**, matched to purifier, cooking fuel and household |
-| Sustainable alternatives | **Sustainable swaps** plus the commute comparison chart |
-| Tailored to location | Live readings and forecast at the user's coordinates, in the place's own time zone |
-| Tailored to lifestyle | Household members, commute (mode, distance, days), exercise, purifier, cooking, notes, language |
-| Clearly explains the direct impact | Every item has *Why* and *Impact* with its type; CO₂e figures are computed in code, never guessed by the model |
-| Responsive, frictionless UI | One form, sensible defaults, remembered answers, geolocation, 14.2 KB of compressed page code, works from 320 px wide |
+| The brief asks for                 | Where AirWise does it                                                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Low-emission daily routines        | **Low-emission routine**, timed with the forecast's cleanest and worst windows                                        |
+| Indoor air quality hacks           | **Indoor air hacks**, matched to purifier, cooking fuel and household                                                 |
+| Sustainable alternatives           | **Sustainable swaps** plus the commute comparison chart                                                               |
+| Tailored to location               | Live readings and forecast at the user's coordinates, in the place's own time zone                                    |
+| Tailored to lifestyle              | Household members, commute (mode, distance, days), exercise, purifier, cooking, notes, language                       |
+| Clearly explains the direct impact | Every item has _Why_ and _Impact_ with its type; CO₂e figures are computed in code, never guessed by the model        |
+| Responsive, frictionless UI        | One form, sensible defaults, remembered answers, geolocation, 14.2 KB of compressed page code, works from 320 px wide |
 
 ## How it works
 
@@ -62,17 +63,25 @@ flowchart LR
 
 ## Google services
 
-| Service | What AirWise uses it for |
-|---|---|
-| **Gemini** (`@google/genai`) | The household plan, as structured JSON output, and follow-up answers |
-| **Google Air Quality API** | Current conditions, the official local index, health advice per group and the hourly forecast |
-| **Cloud Run** | Hosting in Mumbai (`asia-south1`): HTTPS, autoscaling, scales to zero |
-| **Cloud Build + Artifact Registry** | Builds the container from source on `gcloud run deploy --source .` |
-| **Secret Manager** | Holds the Gemini and Maps keys; Cloud Run injects them at start |
-| **Vertex AI** (optional) | Keyless Gemini through the service account |
-| **API Keys API** | `deploy.sh` creates a Maps key restricted to the Air Quality API only |
-| **Cloud Logging** | Structured JSON logs with `severity` and `httpRequest`, parsed with no agent or library |
-| **Google Fonts** | Bricolage Grotesque and Instrument Sans |
+| Service                             | What AirWise uses it for                                                                      |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Gemini** (`@google/genai`)        | The household plan, as structured JSON output, and follow-up answers                          |
+| **Google Air Quality API**          | Current conditions, the official local index, health advice per group and the hourly forecast |
+| **Cloud Run**                       | Hosting in Mumbai (`asia-south1`): HTTPS, autoscaling, scales to zero                         |
+| **Cloud Build + Artifact Registry** | Builds the container from source on `gcloud run deploy --source .`                            |
+| **Secret Manager**                  | Holds the Gemini and Maps keys; Cloud Run injects them at start                               |
+| **Vertex AI** (optional)            | Keyless Gemini through the service account                                                    |
+| **API Keys API**                    | `deploy.sh` creates a Maps key restricted to the Air Quality API only                         |
+| **Cloud Logging**                   | Structured JSON logs with `severity` and `httpRequest`, parsed with no agent or library       |
+| **Google Fonts**                    | Bricolage Grotesque and Instrument Sans                                                       |
+
+## Code quality
+
+- **Linted and formatted:** ESLint (`eslint.config.js`: recommended rules plus `eqeqeq`, `no-shadow`, `prefer-const`, `no-param-reassign`, and caps on function length and complexity) and Prettier. `npm run lint` and `npm run format:check` run in CI and must pass.
+- **Small single-purpose modules.** The server separates HTTP (`src/app.js`), validation (`src/profile.js`), air data (`src/air.js`), maths (`src/aqi.js`, `src/impact.js`), Gemini (`src/gemini.js`) and planning (`src/planner.js`). The page separates DOM helpers, the air view, the plan view, the ask box and the landing-page effects.
+- **Dependency injection instead of globals:** every service takes its collaborators (`fetch`, the Gemini client, the clock, the logger) as arguments, which is how the tests run with no network.
+- **One source of truth:** AQI bands and labels live in `src/aqi.js` and travel to the page with each reading; the page keeps no copy.
+- **Comments say why, not what,** and the deliberate limits are listed under "Honest limits" below.
 
 ## Security
 
@@ -144,30 +153,30 @@ PROJECT_ID=your-project GEMINI_API_KEY=your-key ./deploy.sh
 
 Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 
-| Variable | Purpose |
-|---|---|
-| `GEMINI_API_KEY` | Gemini API key (from Secret Manager on Cloud Run) |
-| `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Use Vertex AI instead of a key |
-| `GEMINI_MODELS` | Models to try in order (default `gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.8-flash`) |
-| `MAPS_API_KEY` | Google Maps Platform key with the Air Quality API (optional) |
-| `PORT` | Set by Cloud Run; 8080 locally |
+| Variable                                                                     | Purpose                                                                                    |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `GEMINI_API_KEY`                                                             | Gemini API key (from Secret Manager on Cloud Run)                                          |
+| `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | Use Vertex AI instead of a key                                                             |
+| `GEMINI_MODELS`                                                              | Models to try in order (default `gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.8-flash`) |
+| `MAPS_API_KEY`                                                               | Google Maps Platform key with the Air Quality API (optional)                               |
+| `PORT`                                                                       | Set by Cloud Run; 8080 locally                                                             |
 
 ## Project layout
 
-| Path | Job |
-|---|---|
-| `server.js` | Wires the services together, listens on `$PORT`, shuts down cleanly on `SIGTERM` |
-| `src/app.js` | HTTP routes, security headers, rate limits, precompressed static files |
-| `src/air.js` | Google Air Quality API and Open-Meteo clients, geocoding, caching |
-| `src/aqi.js` | PM2.5 to US AQI, bands, WHO multiple, cleanest and worst windows |
-| `src/impact.js` | Commute CO₂e and exposure for each mode, and what each swap saves |
-| `src/profile.js` | Validates and cleans everything that arrives from the browser |
-| `src/gemini.js` | Prompts, response schema, model chain, output cleaning |
-| `src/planner.js` | Builds the plan, with caching and the built-in fallback plan |
-| `src/cache.js`, `src/log.js` | TTL cache with in-flight sharing; structured logs |
-| `public/` | The page: HTML, CSS and JavaScript, no framework, no build step |
-| `test/` | Unit and integration tests with recorded-shape sample data |
-| `e2e/` | Browser and accessibility tests (Playwright + axe) |
+| Path                         | Job                                                                                                                                             |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server.js`                  | Wires the services together, listens on `$PORT`, shuts down cleanly on `SIGTERM`                                                                |
+| `src/app.js`                 | HTTP routes, security headers, rate limits, precompressed static files                                                                          |
+| `src/air.js`                 | Google Air Quality API and Open-Meteo clients, geocoding, caching                                                                               |
+| `src/aqi.js`                 | PM2.5 to US AQI, bands, WHO multiple, cleanest and worst windows                                                                                |
+| `src/impact.js`              | Commute CO₂e and exposure for each mode, and what each swap saves                                                                               |
+| `src/profile.js`             | Validates and cleans everything that arrives from the browser                                                                                   |
+| `src/gemini.js`              | Prompts, response schema, model chain, output cleaning                                                                                          |
+| `src/planner.js`             | Builds the plan, with caching and the built-in fallback plan                                                                                    |
+| `src/cache.js`, `src/log.js` | TTL cache with in-flight sharing; structured logs                                                                                               |
+| `public/`                    | The page, no framework or build step: `app.js` (planner form), `air-view.js`, `plan-view.js`, `ask.js`, `landing.js`, `dom.js` (shared helpers) |
+| `test/`                      | Unit and integration tests with recorded-shape sample data                                                                                      |
+| `e2e/`                       | Browser and accessibility tests (Playwright + axe)                                                                                              |
 
 ## Honest limits
 

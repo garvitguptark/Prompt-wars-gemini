@@ -7,7 +7,12 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   reporter: 'list',
   use: { baseURL: 'http://127.0.0.1:8099', trace: 'off' },
-  webServer: { command: 'node server.js', env: { PORT: '8099' }, url: 'http://127.0.0.1:8099/health', reuseExistingServer: !process.env.CI },
+  webServer: {
+    command: 'node server.js',
+    env: { PORT: '8099' },
+    url: 'http://127.0.0.1:8099/health',
+    reuseExistingServer: !process.env.CI,
+  },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'phone', use: { ...devices['Pixel 7'] } },
