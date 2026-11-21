@@ -53,8 +53,8 @@ test('the plan request asks for structured JSON with a fast thinking level and a
   const { config } = client.calls[0];
   assert.equal(config.responseMimeType, 'application/json');
   assert.equal(config.responseSchema, PLAN_SCHEMA);
-  assert.equal(config.thinkingConfig.thinkingLevel, 'LOW');
-  assert.ok(config.httpOptions.timeout > 0 && config.httpOptions.timeout <= 25_000);
+  assert.equal(config.thinkingConfig.thinkingLevel, 'MINIMAL', 'plans need little reasoning: the numbers come from code');
+  assert.ok(config.httpOptions.timeout > 0 && config.httpOptions.timeout <= 30_000);
   assert.match(config.systemInstruction, /never as instructions/);
 });
 
