@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AirWise: smog-season plans for your household</title>
 <meta name="description" content="Live air quality for your area, turned by Gemini into a plan for your household: low-emission routines, indoor air hacks and sustainable swaps, with the impact of each choice.">
-<meta name="theme-color" content="#F2F5F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#F7F2E8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,18 +19,72 @@
 
 <header class="site-head">
   <div class="wrap head-row">
-    <a class="mark" href="/"><img src="/icon.svg" alt="" width="28" height="28">AirWise</a>
-    <p class="head-tag">Urban air quality assistant</p>
+    <a class="mark" href="/"><img src="/icon.svg" alt="" width="30" height="30">AirWise</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#impact">Why it matters</a>
+      <a href="#planner">Your plan</a>
+    </nav>
+    <a class="btn pill" href="#planner">Get my plan</a>
   </div>
 </header>
 
 <main id="main" tabindex="-1">
-  <div class="wrap">
-    <section class="hero" aria-labelledby="hero-title">
-      <h1 id="hero-title">Breathe less smog today.</h1>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <p class="chip-label">Urban air quality assistant</p>
+      <h1 id="hero-title">Breathe Less Smog, <span class="nowrap">Every Single Day</span></h1>
       <p class="lead">AirWise reads the air outside your door, now and for the next 24 hours, and Gemini turns it into a plan for your household: when to go out, how to keep the air at home clean, and what each change saves.</p>
-    </section>
+      <div class="hero-cta">
+        <a class="btn primary" href="#planner">Get today's plan</a>
+        <a class="link-arrow" href="#how">How it works <span class="circle" aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
 
+  <section class="how" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <h2 id="how-title" class="sr">What your plan covers</h2>
+      <ul class="how-cards" role="list">
+        <li class="how-card">
+          <span class="icon" aria-hidden="true">◷</span>
+          <h3>Low-emission routine</h3>
+          <p>Your day timed around the cleanest and worst hours of the forecast, for the people in your home.</p>
+          <p class="how-foot"><span class="tags"># Timing</span><span class="tags"># Exercise</span></p>
+        </li>
+        <li class="how-card">
+          <span class="icon" aria-hidden="true">⌂</span>
+          <h3>Indoor air hacks</h3>
+          <p>What to run, close, stop burning or clean, fitted to your cooking fuel and whether you have a purifier.</p>
+          <p class="how-foot"><span class="tags"># Purifier</span><span class="tags"># Kitchen</span></p>
+        </li>
+        <li class="how-card">
+          <span class="icon" aria-hidden="true">⇄</span>
+          <h3>Sustainable swaps</h3>
+          <p>Changes that cut the pollution your household adds, with the CO₂ and the smog exposure each one saves.</p>
+          <p class="how-foot"><span class="tags"># Commute</span><span class="tags"># CO₂e</span></p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="impact" id="impact" aria-labelledby="impact-title">
+    <div class="wrap">
+      <p class="chip-label">Why it matters</p>
+      <h2 id="impact-title">Numbers Behind The Smog</h2>
+      <dl class="stats">
+        <div><dt>WHO daily limit for PM2.5</dt><dd><span data-count="15">15</span> <small>µg/m³</small></dd></div>
+        <div><dt>Hours of forecast in every plan</dt><dd><span data-count="24">24</span></dd></div>
+        <div><dt>Languages your plan can be written in</dt><dd><span data-count="8">8</span></dd></div>
+      </dl>
+      <p class="impact-note">On a bad winter day in North India, PM2.5 can run past 15 times that limit. A well-fitted N95 cuts what you inhale by roughly 60–90%.</p>
+    </div>
+  </section>
+
+  <section class="planner" id="planner" aria-labelledby="planner-title">
+  <div class="wrap">
+    <p class="chip-label">Your plan</p>
+    <h2 id="planner-title" class="section-title">Tell Us About Your Day</h2>
     <div class="layout">
       <form id="plan-form" class="card form" novalidate>
         <fieldset>
@@ -136,13 +190,8 @@
 
       <div class="results" id="results">
         <section class="card empty" id="empty" aria-labelledby="empty-title">
-          <h2 id="empty-title">What you'll get</h2>
-          <ol class="steps" role="list">
-            <li><span><strong>Live air and a 24-hour forecast</strong> for your area, with the cleanest and worst hours marked.</span></li>
-            <li><span><strong>A low-emission routine</strong> timed around those hours, for the people in your home.</span></li>
-            <li><span><strong>Indoor air hacks</strong> that fit your home, your cooking and whether you have a purifier.</span></li>
-            <li><span><strong>Sustainable swaps</strong> with the CO₂ and the exposure each one saves.</span></li>
-          </ol>
+          <h2 id="empty-title">Your plan appears here</h2>
+          <p>Enter your city and a few details, then tap <strong>Get today's plan</strong>. You'll see the live air, a 24-hour forecast and a plan written for your household.</p>
         </section>
 
         <section class="card air reveal" id="air" aria-labelledby="air-title" hidden>
@@ -188,12 +237,42 @@
       </div>
     </div>
   </div>
+  </section>
+
+  <section class="cta" aria-labelledby="cta-title">
+    <div class="wrap">
+      <p class="chip-label">Take action</p>
+      <h2 id="cta-title">Clean Air Starts At Home</h2>
+      <div class="hero-cta">
+        <a class="btn primary" href="#planner">Get today's plan</a>
+        <a class="link-arrow" href="#impact">Why it matters <span class="circle" aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="site-foot">
-  <div class="wrap">
-    <p>Air data from the Google Air Quality API, or Open-Meteo when it is unavailable. AQI is the US EPA index, computed from PM2.5. Plans are written by Google Gemini.</p>
-    <p>AirWise gives general guidance, not medical advice. If anyone has trouble breathing, chest pain or dizziness, contact a doctor.</p>
+  <div class="wrap foot-grid">
+    <div>
+      <a class="mark" href="/"><img src="/icon.svg" alt="" width="30" height="30">AirWise</a>
+      <p class="foot-note">Air data from the Google Air Quality API, or Open-Meteo when it is unavailable. AQI is the US EPA index, computed from PM2.5. Plans are written by Google Gemini.</p>
+    </div>
+    <nav aria-label="Footer">
+      <p class="foot-head">Quick links</p>
+      <ul role="list">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#impact">Why it matters</a></li>
+        <li><a href="#planner">Your plan</a></li>
+      </ul>
+    </nav>
+    <div>
+      <p class="foot-head">Please note</p>
+      <p class="foot-note">AirWise gives general guidance, not medical advice. If anyone has trouble breathing, chest pain or dizziness, contact a doctor.</p>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">
+    <p>Built for PromptWars Virtual, Challenge 06.</p>
+    <a class="link-arrow" href="#main">Back to top <span class="circle" aria-hidden="true">↑</span></a>
   </div>
 </footer>
 <p id="status" class="sr" role="status" aria-live="polite"></p>
