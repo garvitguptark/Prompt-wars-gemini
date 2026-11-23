@@ -121,7 +121,7 @@ npm run test:e2e        # 20 browser tests: Playwright in Chromium, desktop and 
 - **Unit tests:** every EPA breakpoint edge, forecast windows in the place's time zone, commute maths, input validation, both API response parsers, cache expiry and in-flight sharing, prompt contents and tag isolation, model fallback order, and output cleaning.
 - **Integration tests:** the real HTTP server on a random port, covering security headers, compression and ETags, unknown and traversal paths, validation errors, rate limits, upstream failures and the built-in-guidance path.
 - **Browser tests** (`e2e/`): the real page against the real server, with the API stubbed from the same fixtures. They cover the full plan flow, WCAG 2.2 AA audits, keyboard-only use, model output that tries to inject HTML (shown as text, never run), the error and retry path, follow-up questions, "remember me" clearing stored answers, 320 px layout and reduced motion.
-- **CI:** GitHub Actions runs the syntax check, `npm audit`, the coverage-gated suite and the browser suite on every push. Dependabot proposes dependency and Actions updates weekly.
+- **CI:** GitHub Actions runs the syntax check, `npm audit`, lint and format checks, the coverage-gated suite and the browser suite on every push.
 
 ## Run it locally
 
