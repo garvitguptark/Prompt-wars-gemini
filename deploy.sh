@@ -53,6 +53,6 @@ fi
 echo "Building and deploying..."
 gcloud run deploy "$SERVICE" --source . --region "$REGION" --service-account "$SA" --allow-unauthenticated \
   --set-secrets "$SECRETS" ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
-  --memory 512Mi --cpu 1 --max-instances 3 --timeout 60 --cpu-boost
+  --memory 512Mi --cpu 1 --max-instances 1 --timeout 60 --cpu-boost
 
 echo "Live at: $(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
