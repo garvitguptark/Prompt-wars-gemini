@@ -124,3 +124,11 @@ test('an unknown place is a 404 with a helpful message', async () => {
 function aqiOf(pm) {
   return summarize({ pm25: pm, hourly: [] }, 'UTC').aqi;
 }
+
+test('Indian places also get the CPCB India AQI; Google keeps its own local index when it answers', () => {
+  const india = summarize(parseOpenMeteo(openMeteo), 'Asia/Kolkata', NOW).localIndex;
+  assert.deepEqual(india, { name: 'India AQI (CPCB)', aqi: 346, category: 'Very poor' });
+  assert.equal(summarize(parseOpenMeteo(openMeteo), 'Europe/London', NOW).localIndex, null);
+  const google = summarize(parseGoogle(googleCurrent, googleForecast), 'Asia/Kolkata', NOW).localIndex;
+  assert.equal(google.name, 'AQI (IN)');
+});

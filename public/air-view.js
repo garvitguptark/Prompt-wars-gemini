@@ -82,6 +82,9 @@ export function renderAir(place, air) {
   const updated = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: place.tz })
     .format(new Date(air.updated))
     .toLowerCase();
+  const india = air.localIndex?.name.startsWith('India')
+    ? ' India AQI uses CPCB breakpoints on current PM2.5 and PM10.'
+    : '';
   $('air-source').textContent =
-    `Source: ${air.source}, updated ${updated} local time. AQI is the US EPA index computed from PM2.5.`;
+    `Source: ${air.source}, updated ${updated} local time. AQI is the US EPA index computed from PM2.5.${india}`;
 }

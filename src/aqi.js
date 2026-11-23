@@ -81,3 +81,42 @@ export const hourLabel = (iso, timeZone) =>
 /** "2 pm–5 pm" for a forecast window at the place. */
 export const rangeLabel = (window, timeZone) =>
   `${hourLabel(window.start, timeZone)}–${hourLabel(window.end, timeZone)}`;
+
+// India's National AQI (CPCB): [concentration low, high (µg/m³), index low, high]. The official index uses 24-hour
+// averages; this estimate uses the current reading so Indian families also see the number their news quotes.
+const INDIA = {
+  pm25: [
+    [0, 30, 0, 50],
+    [30, 60, 50, 100],
+    [60, 90, 100, 200],
+    [90, 120, 200, 300],
+    [120, 250, 300, 400],
+    [250, 380, 400, 500],
+  ],
+  pm10: [
+    [0, 50, 0, 50],
+    [50, 100, 50, 100],
+    [100, 250, 100, 200],
+    [250, 350, 200, 300],
+    [350, 430, 300, 400],
+    [430, 510, 400, 500],
+  ],
+};
+const INDIA_BANDS = ['Good', 'Satisfactory', 'Moderate', 'Poor', 'Very poor', 'Severe'];
+
+const subIndex = (table, c) => {
+  const row = table.find(([, high]) => c <= high);
+  if (!row) return 500;
+  const [cLow, cHigh, iLow, iHigh] = row;
+  return Math.round(iLow + ((iHigh - iLow) / (cHigh - cLow)) * (c - cLow));
+};
+
+/** India's National AQI from PM2.5 and, when known, PM10: the higher sub-index wins, as CPCB does. */
+export function indiaAqi(pm25, pm10) {
+  if (!Number.isFinite(pm25) || pm25 < 0) return null;
+  const subs = [subIndex(INDIA.pm25, pm25)];
+  if (Number.isFinite(pm10) && pm10 >= 0) subs.push(subIndex(INDIA.pm10, pm10));
+  const aqi = Math.max(...subs);
+  const band = [50, 100, 200, 300, 400].findIndex((max) => aqi <= max);
+  return { name: 'India AQI (CPCB)', aqi, category: INDIA_BANDS[band === -1 ? 5 : band] };
+}

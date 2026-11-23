@@ -10,7 +10,7 @@ In winter smog, families check an AQI number many times a day, but a number does
 
 ## What AirWise does
 
-1. **Live air and a 24-hour forecast** for any city or for your current location. It shows the US AQI computed from PM2.5, how many times over the WHO daily guideline PM2.5 is, the official local index (India's CPCB NAQI, for example), the main pollutant and the data source's health advice. The cleanest and worst three-hour windows of the day are marked.
+1. **Live air and a 24-hour forecast** for any city or for your current location. It shows the US AQI computed from PM2.5, how many times over the WHO daily guideline PM2.5 is, India's CPCB National AQI for Indian cities (Google's official local index elsewhere, when that source answers), the main pollutant and the data source's health advice. The cleanest and worst three-hour windows of the day are marked.
 2. **A plan written by Gemini for this household.** The plan is tailored to who lives there (children, older adults, asthma or heart conditions, pregnancy), the daily commute, outdoor exercise, cooking fuel, whether there's a purifier, and anything else the person types. It has three parts:
    - **Low-emission routine:** the day in time order, built around the cleanest and worst windows.
    - **Indoor air hacks:** what to run, close, stop burning or clean, for this home.
@@ -168,7 +168,7 @@ Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 | `server.js`                  | Wires the services together, listens on `$PORT`, shuts down cleanly on `SIGTERM`                                                                |
 | `src/app.js`                 | HTTP routes, security headers, rate limits, precompressed static files                                                                          |
 | `src/air.js`                 | Google Air Quality API and Open-Meteo clients, geocoding, caching                                                                               |
-| `src/aqi.js`                 | PM2.5 to US AQI, bands, WHO multiple, cleanest and worst windows                                                                                |
+| `src/aqi.js`                 | PM2.5 to US AQI, India CPCB AQI, bands, WHO multiple, cleanest/worst windows                                                                    |
 | `src/impact.js`              | Commute CO₂e and exposure for each mode, and what each swap saves                                                                               |
 | `src/profile.js`             | Validates and cleans everything that arrives from the browser                                                                                   |
 | `src/gemini.js`              | Prompts, response schema, model chain, output cleaning                                                                                          |
@@ -180,7 +180,7 @@ Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 
 ## Honest limits
 
-- The AQI is computed from PM2.5 alone, the main pollutant in winter smog, using hourly readings. The official EPA index uses 24-hour averages, so the number is an "AQI now", not a daily figure.
+- The AQI is computed from PM2.5 alone, the main pollutant in winter smog, using hourly readings. The official EPA index uses 24-hour averages, so the number is an "AQI now", not a daily figure. The same goes for the India AQI, which takes the worse of the PM2.5 and PM10 sub-indices as CPCB does.
 - The commute emission factors are rough India-typical averages per passenger-km, meant for comparison, not carbon accounting.
 - Rate limits and caches live in each Cloud Run instance's memory, which suits this scale. A busy deployment would add Cloud Armor and a shared cache.
 - The built-in fallback plan is in English only. Gemini plans and answers follow the chosen language.

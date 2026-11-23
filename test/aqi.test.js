@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aqiFromPm25, bandFor, whoMultiple, forecastWindows } from '../src/aqi.js';
+import { aqiFromPm25, bandFor, whoMultiple, forecastWindows, indiaAqi } from '../src/aqi.js';
 
 test('PM2.5 maps onto every US EPA breakpoint edge', () => {
   const edges = [
@@ -61,4 +61,13 @@ test('waking hours follow the place, not the server', () => {
   assert.equal(forecastWindows(hours, 'Asia/Kolkata').cleanest.avgAqi, 50);
   assert.equal(forecastWindows(hours, 'UTC').cleanest.avgAqi, 133);
   assert.equal(forecastWindows(hours.slice(0, 2), 'UTC'), null, 'too few hours for a window');
+});
+
+test('India AQI uses CPCB breakpoints and the worse of PM2.5 and PM10', () => {
+  assert.deepEqual(indiaAqi(30), { name: 'India AQI (CPCB)', aqi: 50, category: 'Good' });
+  assert.equal(indiaAqi(45).category, 'Satisfactory');
+  assert.deepEqual(indiaAqi(245, 300), { name: 'India AQI (CPCB)', aqi: 396, category: 'Very poor' });
+  assert.equal(indiaAqi(20, 300).aqi, 250, 'dusty PM10 can outweigh clean-ish PM2.5');
+  assert.equal(indiaAqi(900).category, 'Severe');
+  assert.equal(indiaAqi(NaN), null);
 });

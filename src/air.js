@@ -1,7 +1,7 @@
 // Live air quality and place search. Google's Air Quality API is the primary source (current conditions, the
 // official local index such as India's CPCB NAQI, health advice per group, and an hourly forecast). Open-Meteo
 // needs no key and answers when no Maps key is configured or Google fails, so the app never goes dark.
-import { aqiFromPm25, bandFor, whoMultiple, forecastWindows } from './aqi.js';
+import { aqiFromPm25, bandFor, whoMultiple, forecastWindows, indiaAqi } from './aqi.js';
 import { ttlCache } from './cache.js';
 import { log as defaultLog } from './log.js';
 
@@ -209,8 +209,11 @@ export function summarize(raw, timeZone, nowMs = Date.now()) {
       const hourAqi = aqiFromPm25(h.pm25);
       return { time: h.time, aqi: hourAqi, band: bandFor(hourAqi) }; // label included, so the page needs no copy
     });
+  const inIndia = timeZone === 'Asia/Kolkata' || timeZone === 'Asia/Calcutta';
+  const pm10 = raw.pollutants?.find((p) => p.code === 'pm10')?.value;
   return {
     ...raw,
+    localIndex: raw.localIndex ?? (inIndia ? indiaAqi(raw.pm25, pm10) : null),
     pm25: round1(raw.pm25),
     aqi,
     band: bandFor(aqi),
