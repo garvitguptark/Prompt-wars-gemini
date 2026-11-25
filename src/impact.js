@@ -3,6 +3,10 @@
 //   car: ~15 km/L petrol at 2.31 kg CO2/L, one rider. Two-wheeler: ~50 km/L. Bus: a diesel/CNG bus at ~1.1 kg/km
 //   shared by ~35 riders. Metro: grid electricity on a busy line. Walking, cycling and working from home emit nothing.
 // Exposure follows commuter studies in Indian cities: open vehicles in traffic breathe the most PM2.5, metro the least.
+/** @import { CommuteMode, CommuteImpact, CommuteAlternative, CurrentCommute, Exposure, Profile } from './types.js' */
+import { roundTo } from './util.js';
+
+/** @satisfies {Record<string, { label: string, kgPerKm: number, exposure: Exposure }>} */
 export const MODES = {
   car: { label: 'Car or cab', kgPerKm: 0.15, exposure: 'medium' },
   two_wheeler: { label: 'Two-wheeler', kgPerKm: 0.05, exposure: 'high' },
@@ -15,15 +19,28 @@ export const MODES = {
 /** A mature tree takes up roughly 21 kg of CO2 a year (widely quoted estimate), a scale people can picture. */
 const TREE_KG_PER_YEAR = 21;
 const WEEKS_PER_YEAR = 52;
-const round1 = (n) => Math.round(n * 10) / 10;
+/** Further than this one way, few people will actually walk or cycle it. */
+const WALKABLE_KM = 5;
 
 /**
- * Weekly CO2e of the current commute and what each realistic alternative would save.
- * @param {{ mode: keyof MODES, km: number, days: number }} commute  one-way distance in km, days a week
+ * A weekly saving, also per year and in trees.
+ * @param {number} savedKgPerWeek
+ */
+function yearly(savedKgPerWeek) {
+  const savedKgPerYear = Math.round(savedKgPerWeek * WEEKS_PER_YEAR);
+  return { savedKgPerWeek, savedKgPerYear, trees: Math.round(savedKgPerYear / TREE_KG_PER_YEAR) };
+}
+
+/**
+ * Weekly CO2e of the current commute and what each realistic alternative would save, biggest saving first.
+ * @param {Profile['commute']} commute  mode, one-way distance in km and days a week
+ * @returns {CommuteImpact}
  */
 export function commuteImpact({ mode, km, days }) {
   const weeklyKm = km * 2 * days;
-  const kgPerWeek = (m) => round1(MODES[m].kgPerKm * weeklyKm);
+  /** @param {CommuteMode} option */
+  const kgPerWeek = (option) => roundTo(MODES[option].kgPerKm * weeklyKm, 1);
+  /** @type {CurrentCommute} */
   const current = {
     mode,
     label: MODES[mode].label,
@@ -33,35 +50,37 @@ export function commuteImpact({ mode, km, days }) {
   };
   if (mode === 'wfh' || weeklyKm === 0) return { current, alternatives: [] };
 
+  /** @type {CommuteMode[]} */
   const options = ['metro', 'bus'];
-  if (km <= 5) options.push('walk_cycle'); // further than this, few people will actually walk or cycle it
+  if (km <= WALKABLE_KM) options.push('walk_cycle');
   if (mode === 'car') options.push('two_wheeler'); // lower CO2 but more exposure: a trade-off worth showing
 
+  /** @type {CommuteAlternative[]} */
   const alternatives = options
-    .filter((m) => m !== mode)
-    .map((m) => {
-      const saved = round1(current.kgPerWeek - kgPerWeek(m));
-      return { mode: m, label: MODES[m].label, kgPerWeek: kgPerWeek(m), exposure: MODES[m].exposure, ...yearly(saved) };
-    });
+    .filter((option) => option !== mode)
+    .map((option) => ({
+      mode: option,
+      label: MODES[option].label,
+      kgPerWeek: kgPerWeek(option),
+      exposure: MODES[option].exposure,
+      ...yearly(roundTo(current.kgPerWeek - kgPerWeek(option), 1)),
+    }));
 
   // One extra work-from-home day on the smoggiest day of the week: often the easiest win.
   if (days > 1) {
-    const saved = round1(current.kgPerWeek / days);
+    const saved = roundTo(current.kgPerWeek / days, 1);
     alternatives.push({
       mode: 'wfh',
       label: 'One more day working from home',
-      kgPerWeek: round1(current.kgPerWeek - saved),
+      kgPerWeek: roundTo(current.kgPerWeek - saved, 1),
       exposure: 'low',
       ...yearly(saved),
     });
   }
   return {
     current,
-    alternatives: alternatives.filter((a) => a.savedKgPerWeek > 0).sort((a, b) => b.savedKgPerWeek - a.savedKgPerWeek),
+    alternatives: alternatives
+      .filter((option) => option.savedKgPerWeek > 0)
+      .sort((a, b) => b.savedKgPerWeek - a.savedKgPerWeek),
   };
-}
-
-function yearly(savedKgPerWeek) {
-  const savedKgPerYear = Math.round(savedKgPerWeek * WEEKS_PER_YEAR);
-  return { savedKgPerWeek, savedKgPerYear, trees: Math.round(savedKgPerYear / TREE_KG_PER_YEAR) };
 }

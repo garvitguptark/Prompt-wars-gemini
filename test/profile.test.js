@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readProfile, readPlace, readCityQuery, readQuestion, cleanText, InputError } from '../src/profile.js';
+import { readProfile, readPlace, readCityQuery, readQuestion, cleanText } from '../src/profile.js';
+import { InputError } from '../src/errors.js';
 
 const rejects = (fn, pattern) =>
   assert.throws(fn, (err) => err instanceof InputError && err.status === 400 && pattern.test(err.message));

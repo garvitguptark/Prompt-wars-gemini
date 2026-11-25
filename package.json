@@ -13,6 +13,7 @@
     "check": "node --check server.js && for f in src/*.js public/*.js; do node --check \"$f\" || exit 1; done",
     "test:e2e": "playwright test --trace off",
     "lint": "eslint .",
+    "typecheck": "tsc -p .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -26,8 +27,10 @@
     "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
+    "@types/node": "22.20.6",
     "eslint": "10.15.0",
     "globals": "17.14.0",
-    "prettier": "3.10.1"
+    "prettier": "3.10.1",
+    "typescript": "6.0.3"
   }
 }

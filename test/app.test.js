@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { createApp, clientIp, rateLimiter } from '../src/app.js';
 import { createPlanner } from '../src/planner.js';
-import { UpstreamError, PlaceNotFound } from '../src/air.js';
+import { UpstreamError, PlaceNotFound } from '../src/errors.js';
 import { delhi, delhiAir, family, geminiPlan, quiet } from './fixtures.js';
 
 const publicDir = join(import.meta.dirname, '..', 'public');
@@ -143,7 +143,7 @@ test('plan and ask bodies are checked before any work is done', async (t) => {
 });
 
 test('rate limits answer 429 with Retry-After, per route group', async (t) => {
-  const get = await start(t, { limits: { air: [2, 60_000], ai: [1, 60_000] } });
+  const get = await start(t, { limits: { air: { max: 2, windowMs: 60_000 }, ai: { max: 1, windowMs: 60_000 } } });
   assert.equal((await get('/api/air?q=Delhi')).status, 200);
   assert.equal((await get('/api/air?q=Delhi')).status, 200);
   const limited = await get('/api/air?q=Delhi');

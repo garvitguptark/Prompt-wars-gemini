@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createAirService, parseGoogle, parseOpenMeteo, summarize, UpstreamError, PlaceNotFound } from '../src/air.js';
+import { createAirService, parseGoogle, parseOpenMeteo, summarize } from '../src/air.js';
+import { UpstreamError, PlaceNotFound } from '../src/errors.js';
+import { aqiFromPm25 } from '../src/aqi.js';
 import { NOW, hourIso, delhi, googleCurrent, googleForecast, openMeteo, fakeFetch, quiet } from './fixtures.js';
 
 test('Google readings are parsed into one shape', () => {
@@ -49,8 +51,8 @@ test('with a Maps key, Google is asked first with the key in a header', async ()
   const s = await air.lookup(delhi);
   assert.equal(s.source, 'Google Air Quality API');
   assert.equal(s.aqi, 340);
-  assert.equal(s.windows.cleanest.avgAqi, aqiOf(60));
-  assert.equal(s.windows.worst.avgAqi, aqiOf(280));
+  assert.equal(s.windows.cleanest.avgAqi, aqiFromPm25(60));
+  assert.equal(s.windows.worst.avgAqi, aqiFromPm25(280));
   assert.ok(fetch.calls.every((c) => !c.url.includes('test-key') && c.init.headers['x-goog-api-key'] === 'test-key'));
 });
 
@@ -120,10 +122,6 @@ test('an unknown place is a 404 with a helpful message', async () => {
     (err) => err instanceof PlaceNotFound && err.status === 404 && /Atlantis/.test(err.message),
   );
 });
-
-function aqiOf(pm) {
-  return summarize({ pm25: pm, hourly: [] }, 'UTC').aqi;
-}
 
 test('Indian places also get the CPCB India AQI; Google keeps its own local index when it answers', () => {
   const india = summarize(parseOpenMeteo(openMeteo), 'Asia/Kolkata', NOW).localIndex;

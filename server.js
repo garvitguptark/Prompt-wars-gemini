@@ -7,6 +7,10 @@ import { createGemini, clientFromEnv, DEFAULT_MODELS } from './src/gemini.js';
 import { createPlanner } from './src/planner.js';
 import { log } from './src/log.js';
 
+const DEFAULT_PORT = 8080;
+/** Nothing here takes longer than a minute, so a stalled client can't hold a socket open past that. */
+const REQUEST_TIMEOUT_MS = 60_000;
+
 try {
   process.loadEnvFile(join(import.meta.dirname, '.env'));
 } catch {
@@ -22,8 +26,8 @@ const gemini = createGemini({ client: clientFromEnv(), models: models.length ? m
 const planner = createPlanner({ air, gemini });
 
 const server = createServer(createApp({ air, planner, publicDir: join(import.meta.dirname, 'public') }));
-server.requestTimeout = 60_000; // nothing here takes longer; a stalled client can't hold a socket open
-const port = Number(process.env.PORT) || 8080;
+server.requestTimeout = REQUEST_TIMEOUT_MS;
+const port = Number(process.env.PORT) || DEFAULT_PORT;
 
 server.listen(port, () => {
   log('INFO', `AirWise listening on port ${port}`, {

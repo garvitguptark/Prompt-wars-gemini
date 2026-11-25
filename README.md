@@ -44,9 +44,9 @@ flowchart LR
   B -->|POST /api/plan, /api/ask| S
   S --> A["src/air.js"] --> GAQ["Google Air Quality API"]
   A -. no key or failure .-> OM["Open-Meteo"]
-  S --> P["src/planner.js"] --> GM["src/gemini.js"] --> GEM["Gemini API or Vertex AI"]
+  S --> P["src/planner.js"] --> GM["src/gemini.js<br/>prompts.js, plan-schema.js"] --> GEM["Gemini API or Vertex AI"]
   P --> I["src/impact.js<br/>commute CO₂e"]
-  P -. Gemini unavailable .-> R["built-in rules"]
+  P -. Gemini unavailable .-> R["src/rules-plan.js"]
 ```
 
 1. `GET /api/air` geocodes the city (or takes the browser's coordinates). It then fetches current conditions and the hourly forecast in parallel, puts both on the US EPA scale (`src/aqi.js`), and finds the cleanest window between 6 am and 10 pm and the worst window at any time.
@@ -56,7 +56,7 @@ flowchart LR
 ### Prompt design
 
 - **Grounded numbers.** Gemini receives the readings, every forecast hour in local time, the windows, the commute figures and a short list of vetted facts (N95 filtration, HEPA effect, gas-stove NO₂ and so on). It is told to quantify impact only from those, so it never invents a reading or a statistic.
-- **Structured output.** `responseMimeType: application/json` with a `responseSchema` (`PLAN_SCHEMA` in `src/gemini.js`) gives the plan a fixed shape: summary, alerts, routine, indoor and swaps. Each item has `time`, `title`, `action`, `why`, `impact` and `impactType`.
+- **Structured output.** `responseMimeType: application/json` with a `responseSchema` (`PLAN_SCHEMA` in `src/plan-schema.js`) gives the plan a fixed shape: summary, alerts, routine, indoor and swaps. Each item has `time`, `title`, `action`, `why`, `impact` and `impactType`.
 - **Tailoring rules.** Sensitive people come first, every item says who it's for, timing follows the windows, and medical advice is limited to "see a doctor".
 - **Prompt-injection defence.** Free text is length-capped, and control characters and `<` `>` are stripped, so the text can't close a tag. It reaches Gemini only inside `<household>` or `<question>` tags, which the system instruction says are information, never instructions. Model output is shown with `textContent` only.
 - **Fast and resilient.** Thinking is kept low for a waiting user: `MINIMAL` for plans (the numbers come from code) and `LOW` for answers. Models are tried fastest first (`gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`) when one is busy (429/503), slow (504 or timeout) or unavailable (404), within a 50-second total budget. A model that just failed moves to the back of the line for 2 minutes (6 hours if it is unavailable to the project), so the next request starts with one that is answering.
@@ -77,10 +77,13 @@ flowchart LR
 
 ## Code quality
 
-- **Linted and formatted:** ESLint (`eslint.config.js`: recommended rules plus `eqeqeq`, `no-shadow`, `prefer-const`, `no-param-reassign`, and caps on function length and complexity) and Prettier. `npm run lint` and `npm run format:check` run in CI and must pass.
-- **Small single-purpose modules.** The server separates HTTP (`src/app.js`), validation (`src/profile.js`), air data (`src/air.js`), maths (`src/aqi.js`, `src/impact.js`), Gemini (`src/gemini.js`) and planning (`src/planner.js`). The page separates DOM helpers, the air view, the plan view, the ask box and the landing-page effects.
+- **Type-checked in strict mode.** Every module, server and page, carries JSDoc types, and `npm run typecheck` runs the TypeScript compiler over them in `strict` mode (`tsconfig.json`, no build step, nothing emitted). The shapes that cross module boundaries (`Place`, `Profile`, `AirSummary`, `Plan`, the service interfaces) are defined once in `src/types.js`, and the page uses the same types as the server, so the API contract is checked end to end. The checker has already caught one real bug: an empty plan section printed the word "null".
+- **Linted and formatted:** ESLint (`eslint.config.js`: recommended rules plus `eqeqeq`, `no-shadow`, `prefer-const`, `no-param-reassign`, and caps on function length and complexity) and Prettier. Lint, format and type checks all run in CI and must pass.
+- **Small single-purpose modules.** The server separates HTTP (`src/app.js`), validation (`src/profile.js`), air data (`src/air.js`), maths (`src/aqi.js`, `src/impact.js`), what we ask Gemini (`src/prompts.js`), the plan's shape and clean-up (`src/plan-schema.js`), the Gemini client (`src/gemini.js`), the built-in plan (`src/rules-plan.js`) and planning (`src/planner.js`). Each module has its own test file. The page separates DOM helpers, the air view, the plan view, the ask box and the landing-page effects.
+- **One error hierarchy.** Every error the server answers with is an `HttpError` subclass from `src/errors.js` (`InputError` 400, `PlaceNotFound` 404, `UpstreamError` 502, `ServiceUnavailable` 503) carrying its status, so the HTTP layer never guesses and only messages we wrote reach the browser.
+- **Named limits, no magic numbers.** Cache lifetimes, rate limits, text caps, AQI thresholds and timeouts are named constants with a comment saying why. The Gemini response schema and the output clean-up share one set of item limits (`PLAN_ITEMS`), so they can't drift apart.
 - **Dependency injection instead of globals:** every service takes its collaborators (`fetch`, the Gemini client, the clock, the logger) as arguments, which is how the tests run with no network.
-- **One source of truth:** AQI bands and labels live in `src/aqi.js` and travel to the page with each reading; the page keeps no copy.
+- **One source of truth:** AQI bands and labels live in `src/aqi.js` and travel to the page with each reading; the page keeps no copy. Rounding and time units live in `src/util.js`.
 - **Comments say why, not what,** and the deliberate limits are listed under "Honest limits" below.
 
 ## Security
@@ -113,15 +116,16 @@ flowchart LR
 ## Testing
 
 ```bash
-npm test                # 57 unit and integration tests, Node's built-in runner, no network needed
-npm run test:coverage   # the same, failing below 95% of lines (currently 99.9%)
-npm run test:e2e        # 20 browser tests: Playwright in Chromium, desktop and phone, with axe accessibility audits
+npm test                # 60 unit and integration tests, Node's built-in runner, no network needed
+npm run test:coverage   # the same, failing below 95% of lines (currently 99.8%)
+npm run test:e2e        # 22 browser tests: Playwright in Chromium, desktop and phone, with axe accessibility audits
+npm run typecheck       # TypeScript's checker in strict mode over the JSDoc types; nothing is compiled
 ```
 
-- **Unit tests:** every EPA breakpoint edge, forecast windows in the place's time zone, commute maths, input validation, both API response parsers, cache expiry and in-flight sharing, prompt contents and tag isolation, model fallback order, and output cleaning.
+- **Unit tests:** every EPA breakpoint edge, forecast windows in the place's time zone, commute maths, input validation, both API response parsers, cache expiry and in-flight sharing, prompt contents and tag isolation, model fallback order, output cleaning, and the response schema and clean-up sharing one set of limits.
 - **Integration tests:** the real HTTP server on a random port, covering security headers, compression and ETags, unknown and traversal paths, validation errors, rate limits, upstream failures and the built-in-guidance path.
-- **Browser tests** (`e2e/`): the real page against the real server, with the API stubbed from the same fixtures. They cover the full plan flow, WCAG 2.2 AA audits, keyboard-only use, model output that tries to inject HTML (shown as text, never run), the error and retry path, follow-up questions, "remember me" clearing stored answers, 320 px layout and reduced motion.
-- **CI:** GitHub Actions runs the syntax check, `npm audit`, lint and format checks, the coverage-gated suite and the browser suite on every push.
+- **Browser tests** (`e2e/`): the real page against the real server, with the API stubbed from the same fixtures. They cover the full plan flow, WCAG 2.2 AA audits, keyboard-only use, model output that tries to inject HTML (shown as text, never run), the error and retry path, an empty plan section being left out, follow-up questions, "remember me" clearing stored answers, 320 px layout and reduced motion.
+- **CI:** GitHub Actions runs the syntax check, `npm audit`, lint, type and format checks, the coverage-gated suite and the browser suite on every push.
 
 ## Run it locally
 
@@ -171,9 +175,15 @@ Leave out `GEMINI_API_KEY` to use Vertex AI with the service account instead.
 | `src/aqi.js`                 | PM2.5 to US AQI, India CPCB AQI, bands, WHO multiple, cleanest/worst windows                                                                    |
 | `src/impact.js`              | Commute CO₂e and exposure for each mode, and what each swap saves                                                                               |
 | `src/profile.js`             | Validates and cleans everything that arrives from the browser                                                                                   |
-| `src/gemini.js`              | Prompts, response schema, model chain, output cleaning                                                                                          |
-| `src/planner.js`             | Builds the plan, with caching and the built-in fallback plan                                                                                    |
+| `src/prompts.js`             | What we ask Gemini: system instructions, vetted facts and the grounded prompts                                                                  |
+| `src/plan-schema.js`         | The plan's response schema and the clean-up every reply goes through                                                                            |
+| `src/gemini.js`              | The Gemini client: model chain, time budget, structured output                                                                                  |
+| `src/planner.js`             | Builds the plan, with caching, and falls back to the built-in plan                                                                              |
+| `src/rules-plan.js`          | The built-in plan: fixed rules over the same inputs Gemini gets                                                                                 |
+| `src/errors.js`              | One error hierarchy, each error carrying its HTTP status                                                                                        |
+| `src/types.js`               | The shared JSDoc types, checked by `npm run typecheck`                                                                                          |
 | `src/cache.js`, `src/log.js` | TTL cache with in-flight sharing; structured logs                                                                                               |
+| `src/util.js`                | Rounding and time units, written once                                                                                                           |
 | `public/`                    | The page, no framework or build step: `app.js` (planner form), `air-view.js`, `plan-view.js`, `ask.js`, `landing.js`, `dom.js` (shared helpers) |
 | `test/`                      | Unit and integration tests with recorded-shape sample data                                                                                      |
 | `e2e/`                       | Browser and accessibility tests (Playwright + axe)                                                                                              |

@@ -1,6 +1,6 @@
 // Stubbed API answers built from the unit tests' recorded-shape fixtures, so browser tests need no network or keys.
 import { delhi, delhiAir, delhiContext, family } from '../test/fixtures.js';
-import { rulesPlan } from '../src/planner.js';
+import { rulesPlan } from '../src/rules-plan.js';
 import { commuteImpact } from '../src/impact.js';
 
 export const airResponse = { place: delhi, air: delhiAir() };

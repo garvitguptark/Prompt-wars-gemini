@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { stubApi, getPlan, planResponse } from './helpers.js';
-import { rulesPlan } from '../src/planner.js';
+import { rulesPlan } from '../src/rules-plan.js';
 import { delhiContext } from '../test/fixtures.js';
 
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -62,6 +62,15 @@ test('model output is shown as text, never run as HTML', async ({ page }) => {
   await expect(page.locator('#plan-body .summary p')).toContainText('<img src=x');
   expect(await page.locator('#plan-body img').count()).toBe(0);
   expect(await page.evaluate(() => window.pwned)).toBeUndefined();
+});
+
+test('a plan with an empty section leaves the section out instead of printing "null"', async ({ page }) => {
+  const plan = { ...rulesPlan(delhiContext()), indoor: [] };
+  await page.unroute('**/api/**');
+  await stubApi(page, { '/api/plan': { json: planResponse(plan) } });
+  await getPlan(page);
+  await expect(page.getByRole('heading', { name: 'Indoor air hacks' })).toHaveCount(0);
+  await expect(page.locator('#plan-body')).not.toContainText('null');
 });
 
 test('when the plan fails, the page says so and offers a retry', async ({ page }) => {

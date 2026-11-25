@@ -1,18 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GoogleGenAI } from '@google/genai';
-import {
-  createGemini,
-  clientFromEnv,
-  describe,
-  planPrompt,
-  askPrompt,
-  sanitizePlan,
-  cleanAnswer,
-  PLAN_SCHEMA,
-  DEFAULT_MODELS,
-} from '../src/gemini.js';
-import { delhiContext, geminiPlan, NOW, quiet } from './fixtures.js';
+import { createGemini, clientFromEnv, DEFAULT_MODELS } from '../src/gemini.js';
+import { PLAN_SCHEMA } from '../src/plan-schema.js';
+import { delhiContext, geminiPlan, quiet } from './fixtures.js';
 
 /** A Gemini client stand-in: each call takes the next scripted reply (an object to return or an Error to throw). */
 function fakeClient(...replies) {
@@ -30,29 +21,6 @@ function fakeClient(...replies) {
   };
 }
 const apiError = (status, message = 'error') => Object.assign(new Error(message), { status });
-
-test('the prompt carries live readings, forecast windows and commute numbers in local time', () => {
-  const { data, household } = describe(delhiContext(), NOW);
-  assert.match(data, /Local time now: Sat 1:40 pm/);
-  assert.match(data, /US AQI 340 \(Hazardous\) from PM2\.5 of 245\.4 µg\/m³, 16\.4× the WHO/);
-  assert.match(data, /Official local index: AQI \(IN\) 412, "Severe air quality"/);
-  assert.match(data, /Cleanest 3 hours \(6 am–10 pm\): 2 pm–5 pm, average AQI 154/);
-  assert.match(data, /Car or cab, 12 km each way, 5 days a week = 120 km and 18 kg CO2e a week/);
-  assert.match(data, /Metro or train: 3\.6 kg CO2e a week, saving 14\.4 kg a week \(749 kg a year/);
-  assert.match(data, /children: "Keep children indoors\."/, 'advice for groups in this household is included');
-  assert.match(data, /athletes: "Do not train outdoors\."/, 'they exercise, so athlete advice applies');
-  assert.match(household, /children, someone with asthma or a lung or heart condition/);
-  assert.match(household, /Notes: "We live next to a highway"/);
-});
-
-test('user text only ever appears inside its own tags', () => {
-  const ctx = delhiContext();
-  const prompt = planPrompt(ctx, NOW);
-  const notesAt = prompt.indexOf('We live next to a highway');
-  assert.ok(notesAt > prompt.indexOf('<household>') && notesAt < prompt.indexOf('</household>'));
-  const ask = askPrompt(ctx, 'Can my son play cricket today?', NOW);
-  assert.match(ask, /<question>\nCan my son play cricket today\?\n<\/question>\n\nAnswer in English\./);
-});
 
 test('the plan request asks for structured JSON with a fast thinking level and a timeout', async () => {
   const client = fakeClient({ text: JSON.stringify(geminiPlan) });
@@ -113,30 +81,6 @@ test('without credentials Gemini is disabled, not crashing', async () => {
   const gemini = createGemini({ client: null });
   assert.equal(gemini.enabled, false);
   await assert.rejects(gemini.plan(delhiContext()), (err) => err.status === 503);
-});
-
-test('model output is trimmed, capped and checked before anyone sees it', () => {
-  const plan = sanitizePlan({
-    summary: '  Bad air.  ',
-    alerts: ['a', '', 'b', 'c', 'd'],
-    routine: [
-      { time: '7 am', title: 'T', action: 'A'.repeat(1000), why: 'W', impact: 'I', impactType: 'nonsense' },
-      { title: '', action: 'no title' },
-    ],
-    indoor: 'not a list',
-  });
-  assert.equal(plan.summary, 'Bad air.');
-  assert.deepEqual(plan.alerts, ['a', 'b']);
-  assert.equal(plan.routine.length, 1);
-  assert.equal(plan.routine[0].action.length, 320);
-  assert.equal(plan.routine[0].impactType, 'both');
-  assert.deepEqual(plan.indoor, []);
-  assert.throws(() => sanitizePlan({ summary: 'x', routine: [] }), /incomplete/);
-  assert.throws(() => sanitizePlan(null), /incomplete/);
-});
-
-test('answers lose markdown but keep paragraphs', () => {
-  assert.equal(cleanAnswer('**Stay in.**\n\n\n\n## Later\nGo out at `2 pm`.'), 'Stay in.\n\n Later\nGo out at 2 pm.');
 });
 
 test('a model that just failed goes to the back of the line, but is still tried', async () => {

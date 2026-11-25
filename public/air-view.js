@@ -1,6 +1,8 @@
 // The air card: the reading now, the official local index, health advice and the 24-hour forecast bars.
-import { $, h } from './dom.js';
+/** @import { AirSummary, AqiWindow, Place } from '../src/types.js' */
+import { byId, h } from './dom.js';
 
+/** @type {Record<string, string>} the provider's population groups, in plain words */
 const HEALTH_GROUPS = {
   generalPopulation: 'Everyone',
   children: 'Children',
@@ -11,28 +13,46 @@ const HEALTH_GROUPS = {
   athletes: 'Exercise',
 };
 
+/** Forecast hours shown on screen: every third one, with every sixth emphasised. */
+const LABEL_EVERY = 3;
+const MAJOR_LABEL_EVERY = 6;
+/** The top of the AQI scale, where a forecast bar is full height. */
+const MAX_AQI = 500;
+
+/**
+ * A formatter for "2 pm" at the place.
+ * @param {string} timeZone
+ * @returns {(iso: string) => string}
+ */
 const hourFormat = (timeZone) => {
-  const fmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', timeZone });
-  return (iso) => fmt.format(new Date(iso)).toLowerCase();
+  const format = new Intl.DateTimeFormat('en-US', { hour: 'numeric', timeZone });
+  return (iso) => format.format(new Date(iso)).toLowerCase();
 };
 
+/** @param {AirSummary} air */
 function renderFacts(air) {
   const facts = [
     ['PM2.5', `${air.pm25} µg/m³`],
     ['WHO daily guideline', air.whoMultiple > 1 ? `${air.whoMultiple}× over` : 'Within it'],
     air.localIndex && [air.localIndex.name, `${air.localIndex.aqi} · ${air.localIndex.category}`],
     air.dominant && ['Main pollutant', air.dominant],
-  ].filter(Boolean);
-  $('air-facts').replaceChildren(
+  ].filter((fact) => Array.isArray(fact));
+  byId('air-facts').replaceChildren(
     ...facts.map(([dt, dd]) => h('div', {}, h('dt', { text: dt }), h('dd', { text: dd }))),
   );
 }
 
+/**
+ * The cleanest and worst windows, and one bar per forecast hour.
+ * @param {AirSummary} air
+ * @param {(iso: string) => string} hour  formats a time as "2 pm" at the place
+ */
 function renderForecast(air, hour) {
   const { windows, hourly } = air;
-  $('forecast').hidden = hourly.length === 0;
-  const span = (w) => `${hour(w.start)}–${hour(w.end)}, AQI ${w.avgAqi}`;
-  $('windows').replaceChildren(
+  byId('forecast').hidden = hourly.length === 0;
+  /** @param {AqiWindow} window */
+  const span = (window) => `${hour(window.start)}–${hour(window.end)}, AQI ${window.avgAqi}`;
+  byId('windows').replaceChildren(
     ...(windows
       ? [
           h('span', { class: 'win clean' }, h('b', { text: 'Cleanest ' }), span(windows.cleanest)),
@@ -41,41 +61,49 @@ function renderForecast(air, hour) {
       : []),
   );
   const clean = windows && [Date.parse(windows.cleanest.start), Date.parse(windows.cleanest.end)];
-  $('bars').replaceChildren(
-    ...hourly.map((pt, i) => {
-      const t = Date.parse(pt.time);
-      const inClean = clean && t >= clean[0] && t < clean[1];
+  byId('bars').replaceChildren(
+    ...hourly.map((point, i) => {
+      const time = Date.parse(point.time);
+      const inClean = clean && time >= clean[0] && time < clean[1];
       // Every third hour is labelled on screen; every hour is read out in full to screen readers.
-      const labelClass = i % 3 === 0 ? `bar-label${i % 6 === 0 ? ' major' : ''}` : 'sr';
+      const labelClass = i % LABEL_EVERY === 0 ? `bar-label${i % MAJOR_LABEL_EVERY === 0 ? ' major' : ''}` : 'sr';
       return h(
         'li',
         {
           class: inClean ? 'bar is-clean' : 'bar',
-          'data-band': pt.band.key,
-          vars: { '--v': Math.min(pt.aqi, 500) / 500 },
+          'data-band': point.band.key,
+          vars: { '--v': Math.min(point.aqi, MAX_AQI) / MAX_AQI },
         },
         h('span', { class: 'bar-fill', 'aria-hidden': 'true' }),
-        h('span', { class: labelClass, text: hour(pt.time) }),
-        h('span', { class: 'sr', text: `: AQI ${pt.aqi}, ${pt.band.label}${inClean ? ', cleanest window' : ''}` }),
+        h('span', { class: labelClass, text: hour(point.time) }),
+        h('span', {
+          class: 'sr',
+          text: `: AQI ${point.aqi}, ${point.band.label}${inClean ? ', cleanest window' : ''}`,
+        }),
       );
     }),
   );
 }
 
+/** @param {AirSummary} air */
 function renderHealth(air) {
   const advice = Object.entries(air.health ?? {}).filter(([group, text]) => HEALTH_GROUPS[group] && text);
-  $('health').hidden = advice.length === 0;
-  $('health-list').replaceChildren(
+  byId('health').hidden = advice.length === 0;
+  byId('health-list').replaceChildren(
     ...advice.map(([group, text]) => h('li', {}, h('strong', { text: `${HEALTH_GROUPS[group]}: ` }), text)),
   );
 }
 
-/** Fills the air card for `place` from an /api/air or /api/plan reading. */
+/**
+ * Fills the air card for `place` from an /api/air or /api/plan reading.
+ * @param {Place} place
+ * @param {AirSummary} air
+ */
 export function renderAir(place, air) {
-  $('air').dataset.band = air.band.key;
-  $('air-place').textContent = place.name;
-  $('aqi-num').textContent = air.aqi;
-  $('aqi-band').textContent = air.band.label;
+  byId('air').dataset.band = air.band.key;
+  byId('air-place').textContent = place.name;
+  byId('aqi-num').textContent = String(air.aqi);
+  byId('aqi-band').textContent = air.band.label;
   renderFacts(air);
   renderForecast(air, hourFormat(place.tz));
   renderHealth(air);
@@ -85,6 +113,6 @@ export function renderAir(place, air) {
   const india = air.localIndex?.name.startsWith('India')
     ? ' India AQI uses CPCB breakpoints on current PM2.5 and PM10.'
     : '';
-  $('air-source').textContent =
+  byId('air-source').textContent =
     `Source: ${air.source}, updated ${updated} local time. AQI is the US EPA index computed from PM2.5.${india}`;
 }
